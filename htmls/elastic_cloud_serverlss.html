@@ -1,0 +1,1579 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Elastic Cloud Serverless 技術 Deep Dive レポート</title>
+<style>
+:root {
+  --bg: #0f1419;
+  --bg-elev: #161d24;
+  --bg-code: #1a232c;
+  --bg-table-alt: #131a21;
+  --fg: #d7e1ea;
+  --fg-muted: #8da2b5;
+  --fg-strong: #ffffff;
+  --border: #243240;
+  --border-soft: #1e2a36;
+  --accent: #1ba9f5;
+  --accent-2: #00bfb3;
+  --accent-yellow: #fed10a;
+  --link: #4fc3f7;
+  --link-hover: #80deea;
+  --shadow: 0 4px 18px rgba(0, 0, 0, 0.35);
+  --radius: 6px;
+  --radius-lg: 12px;
+  --maxw: 980px;
+}
+
+* { box-sizing: border-box; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--fg);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Hiragino Kaku Gothic ProN",
+               "Hiragino Sans", "Yu Gothic UI", Meiryo, "Noto Sans JP", sans-serif;
+  font-size: 16px;
+  line-height: 1.8;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+.page {
+  max-width: var(--maxw);
+  margin: 0 auto;
+  padding: 64px 32px 96px;
+}
+
+/* ---------- Headings ---------- */
+h1, h2, h3, h4, h5, h6 {
+  color: var(--fg-strong);
+  font-weight: 700;
+  line-height: 1.35;
+  margin: 2.2em 0 0.8em;
+}
+
+h1 {
+  font-size: 2.0em;
+  margin-top: 2.4em;
+  padding: 1.0em 1.2em 0.9em;
+  background: linear-gradient(135deg, rgba(27,169,245,0.10), rgba(0,191,179,0.08));
+  border-left: 5px solid var(--accent);
+  border-radius: var(--radius-lg);
+  letter-spacing: 0.01em;
+}
+
+h1:first-of-type {
+  margin-top: 0;
+  background: none;
+  border: none;
+  padding: 0;
+  font-size: 2.4em;
+  text-align: center;
+  border-bottom: 2px solid var(--border);
+  padding-bottom: 0.6em;
+  margin-bottom: 0.6em;
+}
+
+h2 {
+  font-size: 1.45em;
+  padding-bottom: 0.35em;
+  border-bottom: 1px solid var(--border);
+  color: var(--accent-2);
+}
+
+h3 {
+  font-size: 1.18em;
+  color: var(--fg-strong);
+  margin-top: 1.8em;
+}
+
+h4 {
+  font-size: 1.02em;
+  color: var(--accent-yellow);
+  margin-top: 1.5em;
+}
+
+/* ---------- Paragraph & text ---------- */
+p {
+  margin: 0.9em 0;
+}
+
+strong {
+  color: var(--fg-strong);
+  font-weight: 700;
+}
+
+em {
+  color: var(--accent-yellow);
+  font-style: normal;
+}
+
+/* ---------- Links ---------- */
+a {
+  color: var(--link);
+  text-decoration: none;
+  border-bottom: 1px dotted rgba(79,195,247,0.4);
+  transition: color 0.15s ease, border-color 0.15s ease;
+}
+
+a:hover {
+  color: var(--link-hover);
+  border-bottom-color: var(--link-hover);
+}
+
+/* ---------- Lists ---------- */
+ul, ol {
+  padding-left: 1.6em;
+  margin: 0.8em 0;
+}
+
+li {
+  margin: 0.3em 0;
+}
+
+li > p { margin: 0.3em 0; }
+
+ul ul, ol ol, ul ol, ol ul { margin: 0.2em 0; }
+
+/* ---------- Code ---------- */
+code {
+  font-family: "JetBrains Mono", "Cascadia Code", "Fira Code", Consolas, "Liberation Mono", Menlo, monospace;
+  font-size: 0.92em;
+}
+
+p code, li code, td code, th code {
+  background: var(--bg-code);
+  color: var(--accent-yellow);
+  padding: 0.12em 0.45em;
+  border-radius: 4px;
+  border: 1px solid var(--border-soft);
+}
+
+pre {
+  background: var(--bg-code);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px 18px;
+  overflow-x: auto;
+  margin: 1.2em 0;
+  box-shadow: var(--shadow);
+  line-height: 1.55;
+}
+
+pre code {
+  background: transparent !important;
+  color: var(--fg);
+  border: none;
+  padding: 0;
+  font-size: 0.88em;
+  white-space: pre;
+}
+
+/* ---------- Tables ---------- */
+table {
+  border-collapse: collapse;
+  margin: 1.2em 0;
+  width: 100%;
+  background: var(--bg-elev);
+  border-radius: var(--radius);
+  overflow: hidden;
+  box-shadow: var(--shadow);
+  font-size: 0.95em;
+}
+
+thead {
+  background: linear-gradient(180deg, #1f2c38, #1a2530);
+}
+
+th, td {
+  padding: 10px 14px;
+  border: 1px solid var(--border);
+  text-align: left;
+  vertical-align: top;
+}
+
+th {
+  color: var(--accent-2);
+  font-weight: 700;
+  border-bottom: 2px solid var(--accent);
+}
+
+tbody tr:nth-child(even) {
+  background: var(--bg-table-alt);
+}
+
+tbody tr:hover {
+  background: rgba(27,169,245,0.06);
+}
+
+/* ---------- Blockquote ---------- */
+blockquote {
+  margin: 1.2em 0;
+  padding: 0.8em 1.2em;
+  background: var(--bg-elev);
+  border-left: 4px solid var(--accent-2);
+  border-radius: var(--radius);
+  color: var(--fg-muted);
+  font-style: italic;
+}
+
+/* ---------- Horizontal rule ---------- */
+hr {
+  border: none;
+  height: 1px;
+  background: linear-gradient(to right, transparent, var(--border), transparent);
+  margin: 3em 0;
+}
+
+/* ---------- Meta info block at top ---------- */
+.meta {
+  text-align: center;
+  color: var(--fg-muted);
+  font-size: 0.95em;
+  margin-bottom: 1.5em;
+}
+
+/* ---------- Table of contents ---------- */
+.toc-block {
+  background: var(--bg-elev);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 20px 24px;
+  margin: 1.5em 0 3em;
+  box-shadow: var(--shadow);
+}
+
+.toc-block h2 {
+  border: none;
+  margin-top: 0;
+  font-size: 1.1em;
+  color: var(--accent-yellow);
+  padding-bottom: 0;
+}
+
+.toc-block ul {
+  list-style: none;
+  padding-left: 0;
+  margin: 0;
+}
+
+.toc-block li {
+  padding: 4px 0;
+  border-bottom: 1px solid var(--border-soft);
+}
+
+.toc-block li:last-child { border-bottom: none; }
+
+.toc-block a {
+  color: var(--fg);
+  border: none;
+  display: block;
+  padding: 4px 0;
+}
+
+.toc-block a:hover {
+  color: var(--accent);
+}
+
+/* ---------- Inline keyword highlight ---------- */
+.kbd, kbd {
+  background: var(--bg-code);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  padding: 0 5px;
+  font-size: 0.85em;
+  color: var(--accent-yellow);
+}
+
+/* ---------- Responsive ---------- */
+@media (max-width: 720px) {
+  body { font-size: 15px; line-height: 1.7; }
+  .page { padding: 32px 18px 64px; }
+  h1 { font-size: 1.6em; padding: 0.8em; }
+  h1:first-of-type { font-size: 1.9em; }
+  h2 { font-size: 1.25em; }
+  pre { font-size: 0.85em; padding: 12px; }
+  table { font-size: 0.88em; }
+  th, td { padding: 8px 10px; }
+}
+
+/* ---------- Selection ---------- */
+::selection {
+  background: rgba(27,169,245,0.35);
+  color: var(--fg-strong);
+}
+
+/* ---------- Scrollbar (WebKit) ---------- */
+::-webkit-scrollbar { width: 12px; height: 12px; }
+::-webkit-scrollbar-track { background: var(--bg); }
+::-webkit-scrollbar-thumb {
+  background: #2c3a48;
+  border-radius: 6px;
+  border: 3px solid var(--bg);
+}
+::-webkit-scrollbar-thumb:hover { background: #3a4a5a; }
+</style>
+</head>
+<body>
+<main class="page">
+<h1 id="elastic-cloud-serverless-技術-deep-dive-レポート">Elastic Cloud Serverless 技術 Deep Dive レポート</h1>
+<div class="meta">
+<p><strong>著者</strong>: Claude (Opus 4.7)
+<strong>生成日</strong>: 2026 年 5 月 18 日
+<strong>対象読者</strong>: Elasticsearch の基礎(インデックス、シャード、Lucene、translog、クエリ DSL、Hot/Warm/Cold tier 等) を理解しているが、Elastic Cloud Serverless (以下 ECS) の内部設計には詳しくないエンジニア</p>
+</div>
+<hr>
+<div class="toc-block"><h2 id="目次">目次</h2><ul>
+<li><a href="#%E7%AC%AC1%E7%AB%A0-%E3%81%AF%E3%81%98%E3%82%81%E3%81%AB">第1章 はじめに</a></li>
+<li><a href="#%E7%AC%AC2%E7%AB%A0-%E8%A8%AD%E8%A8%88%E5%8E%9F%E5%89%87-%E3%81%AA%E3%81%9C-ecs-%E3%81%AF-stateless-%E3%81%AA%E3%81%AE%E3%81%8B">第2章 設計原則: なぜ ECS は Stateless なのか</a></li>
+<li><a href="#%E7%AC%AC3%E7%AB%A0-%E3%82%B9%E3%83%88%E3%83%AC%E3%83%BC%E3%82%B8%E5%B1%A4%E3%81%AE%E5%86%8D%E8%A8%AD%E8%A8%88-object-store-%E3%82%92-single-source-of-truth-%E3%81%AB">第3章 ストレージ層の再設計: Object Store を Single Source of Truth に</a></li>
+<li><a href="#%E7%AC%AC4%E7%AB%A0-%E6%9B%B8%E3%81%8D%E8%BE%BC%E3%81%BF%E3%83%91%E3%82%B9-deep-dive">第4章 書き込みパス Deep Dive</a></li>
+<li><a href="#%E7%AC%AC5%E7%AB%A0-%E8%AA%AD%E3%81%BF%E5%8F%96%E3%82%8A%E6%A4%9C%E7%B4%A2%E3%83%91%E3%82%B9-deep-dive">第5章 読み取り・検索パス Deep Dive</a></li>
+<li><a href="#%E7%AC%AC6%E7%AB%A0-ecs-%E3%82%92%E6%94%AF%E3%81%88%E3%82%8B%E3%82%A4%E3%83%B3%E3%83%95%E3%83%A9-plane">第6章 ECS を支えるインフラ Plane</a></li>
+<li><a href="#%E7%AC%AC7%E7%AB%A0-%E3%82%AA%E3%83%BC%E3%83%88%E3%82%B9%E3%82%B1%E3%83%BC%E3%83%AA%E3%83%B3%E3%82%B0%E6%A9%9F%E6%A7%8B">第7章 オートスケーリング機構</a></li>
+<li><a href="#%E7%AC%AC8%E7%AB%A0-%E8%AA%B2%E9%87%91%E3%83%A2%E3%83%87%E3%83%AB-vcuecu-%E3%81%A8-usagebilling-pipeline">第8章 課金モデル: VCU/ECU と Usage/Billing Pipeline</a></li>
+<li><a href="#%E7%AC%AC9%E7%AB%A0-%E3%82%BB%E3%82%AD%E3%83%A5%E3%83%AA%E3%83%86%E3%82%A3%E6%8E%A5%E7%B6%9A%E6%80%A7%E9%81%8B%E7%94%A8%E7%9B%A3%E8%A6%96">第9章 セキュリティ・接続性・運用監視</a></li>
+<li><a href="#%E7%AC%AC10%E7%AB%A0-ecs-%E3%81%AE%E5%88%B6%E9%99%90%E4%BA%8B%E9%A0%85%E3%81%A8-hosted-%E3%81%A8%E3%81%AE%E6%A9%9F%E8%83%BD%E5%B7%AE%E5%88%86">第10章 ECS の制限事項と Hosted との機能差分</a></li>
+<li><a href="#%E7%AC%AC11%E7%AB%A0-%E7%B5%90%E8%AB%96-ecs-%E3%81%AE%E6%9C%AC%E8%B3%AA%E7%9A%84%E3%81%AA%E8%A8%AD%E8%A8%88%E3%83%88%E3%83%AC%E3%83%BC%E3%83%89%E3%82%AA%E3%83%95">第11章 結論: ECS の本質的な設計トレードオフ</a></li>
+</ul></div>
+<hr>
+<h1 id="第1章-はじめに">第1章 はじめに</h1>
+<h2 id="11-想定読者と前提知識">1.1 想定読者と前提知識</h2>
+<p>本レポートは、Elasticsearch を業務で利用した経験があり、その内部構造についてもある程度理解しているエンジニアを対象とした、Elastic Cloud Serverless (以下 ECS) の技術 Deep Dive である。具体的には、インデックスとシャードの分割、プライマリ/レプリカ複製、Lucene の immutable segment と translog、リフレッシュとフラッシュの違い、Hot/Warm/Cold/Frozen のデータティア、Index Lifecycle Management (ILM)、クエリ DSL の構造、といった概念について別途解説を要しない読者を想定している。</p>
+<p>一方で、ECS そのものについては「フルマネージドで自動スケールする SaaS」という Web ページ上の宣伝文を見たことがある程度で、内部設計、特に「ローカルディスクと Lucene セグメントに依存してきた検索エンジンを、どのようにオブジェクトストア前提のステートレス分散システムに作り変えたのか」を技術的に理解できていない読者を主眼に置いている。本レポートでは、ECS の内部メカニズム、すなわちオブジェクトストアを Source of Truth (SoT) として扱う durability モデル、Batched Compound Commit (BCC) と呼ばれる書き込みバッチ、Indexing ノードと Search ノードを物理的に分離したアーキテクチャ、Kubernetes と Cilium ベースのデータプレーン、ECU を単位とする課金モデルなどを順に解き明かしていく。</p>
+<p>なお本レポート中で「Stateful Elasticsearch」と呼ぶ場合、いわゆるオンプレ版および Elastic Cloud Hosted を含む、Local NVMe 等の永続ローカルディスクをデータの恒久的な保存先として持つ従来型の Elasticsearch を指す。これに対して「Stateless」とは、ノードのローカルディスクに durable な状態 (永続的に保持されるべき真のデータ) を持たず、ローカルディスクはあくまでオブジェクトストアにある真のデータのキャッシュとしてのみ使われる、という設計上の性質を指している。この語感覚は ECS の全体像を理解する上で重要な前提となるため、章を通して同じ意味で用いる。</p>
+<h2 id="12-検索エンジンをstateless-化する技術的挑戦">1.2 検索エンジンを「Stateless 化」する技術的挑戦</h2>
+<p>検索エンジンはもともと、極めて Stateful なシステムである。Elasticsearch も例外ではなく、長らく「ローカル NVMe に Lucene セグメントを書き、translog でクラッシュリカバリを担保し、シャードのプライマリとレプリカをノードに分散配置して耐久性を確保する」という前提のもとで進化してきた。クラスタを本番投入するためには、サーバを構築し、ストレージを設計し、コスト・性能・信頼性のチューニングを行い、ピーク負荷に備えてアイドル容量を持ち、スケール時には大きな運用工数を投入する必要があった。</p>
+<p>この前提を Elastic 自身が問い直し、「Elasticsearch の強力なクエリ機能を保ちつつ、サーバーレスの経済性と運用性を実現できるか」という問いに答える形で生まれたのが、ECS の元となった Stateless アーキテクチャである。Elastic はこの設計を学術的にも整理し、ACM SoCC 2025 で査読論文「Serverless Elasticsearch: the Architecture Transformation from Stateful to Stateless」として発表している。論文では、ストレージとコンピュートを分離し、データをクラウド Blob ストアに保存することで、「検索エンジンの中核を完全にサーバーレス世界のために再設計」したと位置付けられている。</p>
+<p>ここで強調すべきは、ECS で目指された価値が単なる「マネージドサービス化」ではないという点である。設計の眼目は以下の 3 点に集約される。第一に、コンピュートとストレージを物理的に分離し、それぞれを独立に伸縮させること。第二に、書き込み (indexing) と読み出し (search) という性質の異なるワークロードを別ノードに割り当て、互いに干渉させないこと。第三に、オブジェクトストアを耐久性の単一信号源 (Source of Truth) とすることで、レプリカシャードによる二重書き込みや Hot/Warm/Cold 間のデータ移動を不要にすることである。これらを同時に達成しないと「ステートレスにしたが遅くなった検索エンジン」になってしまうため、低レイテンシ維持のためのキャッシュとセグメントレベルの並列化が第 4 の柱として加えられる。</p>
+<p>技術的な挑戦は多岐にわたる。たとえばオブジェクトストアは MB/req オーダーの料金体系を持つため、Stateful 版と同じ頻度で書き込みを行うと API コストが爆発する。これに対する答えが Batched Compound Commit (BCC)、translog のノードレベルバッチング、リフレッシュとオブジェクトストア書き込みの分離である。また、Lucene セグメントの読み出しを毎回オブジェクトストアから行えば検索レイテンシは到底許容できないため、ローカルディスクをキャッシュとして使い、検索ノードはオブジェクトストアと共有キャッシュから読む構造が採られている。本レポートは、こうした個別の工夫を「設計原則」「データ書き込み」「データ読み出し」「コントロールプレーン」「課金/スケーリング」「機能差分」といった切り口で順に展開していく。</p>
+<h2 id="13-本レポートのスコープと読み方">1.3 本レポートのスコープと読み方</h2>
+<p>本レポートは Elastic 公式ドキュメント、Elastic 自身が公開している技術ブログ (Elastic Blog / Search Labs)、ACM SoCC 2025 査読論文に基づいて構成されている。出典が確認できる事実のみを記述し、推測や創作は行わない。図やコードブロックは概念整理を目的としたプレースホルダ的なものを含むが、登場する固有名詞や数値 (BCC、ECU、VCU、Cilium、Crossplane、リフレッシュ API コール削減量「2 桁オーダー」、ピーク 50 パーセンタイルで「約 2 倍のインデックススループット」など) は出典に揃えている。</p>
+<p>各章はおおむね「Stateful Elasticsearch ではどうだったか」「ECS では何がどう変わったか」「結果として何が得られ、何がトレードオフになったか」という三段で構成する。すでに Elasticsearch を運用したことがある読者には、第 2 章で示す Stateful 構造の摩擦点が現場感のあるチェックリストとして読めるはずである。逆に、運用経験が浅い読者は第 2 章 2.1 を最初に丁寧に読んでから先に進むことを推奨する。</p>
+<p>本レポートのスコープは、ECS のアーキテクチャ、データプレーン/コントロールプレーン、スケーリング、課金モデル、Hosted との機能差分までを含む。一方で、Elasticsearch そのもののクエリ言語仕様、ELSER や Reciprocal Rank Fusion などの ML/ランキング詳細、Kibana の UI 機能、各 Solution (Observability/Security) のユースケース別ベストプラクティスについては、必要に応じて触れるに留め、深堀りは行わない。本レポート全体は「ECS の内部設計と Stateful Elasticsearch との差分」を理解するための一次的なガイドとして読んでいただきたい。</p>
+<h2 id="本章のまとめ">本章のまとめ</h2>
+<p>本章では、対象読者を「Elasticsearch の基本は知っているが ECS の内部設計は十分知らないエンジニア」と定義し、本レポートの「Stateful とは durable なローカル状態を持つ意である」という語感覚と、ECS が目指した「コンピュート/ストレージ分離」「インデックス/検索分離」「オブジェクトストアを Source of Truth に」「低レイテンシ維持」という 4 つの価値を提示した。次章ではこの価値の前提となる Stateful Elasticsearch の構造と、そこから ECS への移行を必然たらしめた 4 つの摩擦を分解していく。</p>
+<h2 id="参考ドキュメント">参考ドキュメント</h2>
+<ul>
+<li>Elastic Cloud Serverless (公式ドキュメント): https://www.elastic.co/docs/deploy-manage/deploy/elastic-cloud/serverless</li>
+<li>Serve more with Elastic Cloud Serverless and Search AI Lake (製品ページ): https://www.elastic.co/cloud/serverless</li>
+<li>Elastic's Journey to Build Elastic Cloud Serverless (Elastic Blog): https://www.elastic.co/blog/journey-to-build-elastic-cloud-serverless</li>
+<li>The stateless architecture of Elasticsearch Serverless (Search Labs): https://www.elastic.co/search-labs/blog/elasticsearch-serverless-stateless-architecture</li>
+<li>Serve more with Serverless (Elastic Blog): https://www.elastic.co/blog/elastic-serverless-architecture</li>
+<li>Building Elastic Cloud Serverless (Search Labs): https://www.elastic.co/search-labs/blog/building-elastic-cloud-serverless</li>
+<li>Dive into the industry's first Search AI Lake (製品ページ): https://www.elastic.co/cloud/serverless/search-ai-lake</li>
+<li>Announcing Search AI Lake and Elastic Cloud Serverless (Elastic Blog): https://www.elastic.co/blog/search-ai-lake-elastic-cloud-serverless</li>
+<li>Compare Elastic Cloud Hosted and Serverless (公式ドキュメント): https://www.elastic.co/docs/deploy-manage/deploy/elastic-cloud/differences-from-other-elasticsearch-offerings</li>
+</ul>
+<hr>
+<h1 id="第2章-設計原則-なぜ-ecs-は-stateless-なのか">第2章 設計原則: なぜ ECS は Stateless なのか</h1>
+<h2 id="21-stateful-elasticsearch-の内部構造を分解する">2.1 Stateful Elasticsearch の内部構造を分解する</h2>
+<p>ECS の設計原則を理解する前に、まず「ステートフルだった頃の Elasticsearch」を構造として分解しておきたい。Elasticsearch のインデックスは複数の Primary Shard に水平分割され、各 Primary Shard は 1 つ以上の Replica Shard を持つ。各シャードは独立した Lucene Index として実体化され、ノードのローカル NVMe (またはローカルブロックストレージ) 上に格納される。耐久性は「ローカルディスクへの fsync」と「Primary→Replica へのドキュメントレベル複製」の二段構えで担保されている。</p>
+<p>Lucene の内部は不変 (immutable) な Segment の集合である。書き込みリクエストはまずインメモリのバッファに溜まり、リフレッシュ (デフォルト 1 秒間隔) のタイミングで in-memory segment として可視化されて検索可能になる。さらにフラッシュのタイミングで segment がディスクに commit され、translog がローテートされる。translog はディスクへ追記される write-ahead log であり、フラッシュ前にノードがクラッシュした場合のリプレイ源として使われる。すなわち、シャードのローカルディスクには「commit 済み Lucene segment」「未 commit の in-memory segment が指すバッファ」「translog」という 3 種類の永続/半永続状態が同居している。</p>
+<p>ステートフル版での書き込みフローは、おおむね次のようになる。クライアントから受け取ったドキュメントは、まず Primary Shard を持つノードの Lucene バッファと translog に書かれ、続いて Replica Shard を持つ別ノードへ転送され、そちらでも同じ処理が行われる。Primary と Replica の双方で translog が fsync されたところでクライアントに ack を返す。リフレッシュは Primary と Replica で独立に行われ、それぞれのノードのローカルディスク上に新しい segment が生成される。これにより、Replica は「全く同じ Lucene インデックスを持つもう一つの完全なコピー」として機能する。</p>
+<p>データのライフサイクルには Hot / Warm / Cold / Frozen のデータティアが用いられる。新規書き込みは Hot ティア (高性能ノード、ローカル NVMe) に置かれ、ILM のポリシーに従って一定期間後に Warm へ、さらに Cold、Frozen へと「物理的にシャードを別ノードへコピー」して移動していく。Frozen ティアは検索可能スナップショットを用いて一部をオブジェクトストアに退避するが、Hot/Warm/Cold の実体は依然としてローカルディスクであり、ティア間の移動はネットワーク越しに segment 一式をコピーするコストの高い操作となる。</p>
+<pre class="hljs"><code><div>[Stateful Elasticsearch のシャード配置 (概念図)]
+
+  Node A (Hot)              Node B (Hot)               Node C (Warm)
+  ┌──────────────┐          ┌──────────────┐          ┌──────────────┐
+  │ Shard0 Pri   │ &lt;──────&gt; │ Shard0 Rep   │          │ Shard1 (移動)│
+  │  segments    │          │  segments    │          │  segments    │
+  │  translog    │          │  translog    │          │  translog    │
+  │  Local NVMe  │          │  Local NVMe  │          │  Local NVMe  │
+  └──────────────┘          └──────────────┘          └──────────────┘
+       書き込み              レプリカ複製               ILM での tier 移動
+</div></code></pre>
+<p>要するに、Stateful Elasticsearch は「ローカルディスクが Source of Truth であること」「Primary/Replica の物理コピーで耐久性を確保すること」「ホット/ウォーム/コールドの物理ノード間でデータを引っ越しさせること」を前提に最適化された設計だったといえる。次節ではこの前提が運用上どのような摩擦を生むかを整理する。</p>
+<h2 id="22-stateful-構造に内在する-4-つの摩擦">2.2 Stateful 構造に内在する 4 つの摩擦</h2>
+<p>第一の摩擦は「キャパシティ計画 (capacity planning) のコスト」である。ローカルディスクが SoT である以上、データ量とピーク時の書き込み/検索負荷を事前に見積もり、それに耐える Hot/Warm/Cold ノードを用意しておく必要がある。たとえばログ系の Observability ワークロードでは平常時 10MB/s、インシデント時 100MB/s というように 10 倍の差が生じることが珍しくないが、Stateful 構造ではピーク値に合わせてアイドル容量を持つしかなく、Elastic 自身も Search Labs のブログで「ワークロード変動時のアイドル容量に支払い続ける必要があった」と振り返っている。</p>
+<p>第二の摩擦は「スケール時間」である。新しいノードを Hot ティアに追加した場合、シャードを再配置するためには Lucene セグメント全体を物理コピーする必要がある。シャードのサイズが数十 GB を超えるとこれは分単位ではなく時間単位の処理となり、急峻なトラフィック増に対して追従できない。Stateful Elasticsearch でオートスケーリングが「あるにはあるが使いにくい」のは、シャードコピーが律速になっているためである。</p>
+<p>第三の摩擦は「レプリカ複製のコスト」である。耐久性のためのレプリカは、ストレージ容量を物理的に倍 (replica=1 の場合) にするだけでなく、書き込みパスでも「Primary に到達したドキュメントを Replica へ転送し、Replica 側でも Lucene 解析・インバートインデックス構築・fsync を再実行する」という二重処理を強いる。これは典型的な書き込み増幅 (write amplification) であり、ノードの CPU/IO 双方を消費する。後述するように、ECS が「50 パーセンタイルで約 2 倍のインデックススループット」を達成できた要因の大半は、この二重処理を排したことに由来すると Elastic 論文も指摘している。</p>
+<p>第四の摩擦は「ティア間データ移動」である。ILM が「30 日経ったら Hot から Warm へ」というように定期的にシャードを別ノードへ引っ越しさせるため、夜間や週末にバックグラウンドで大量のデータコピーが発生する。これは検索負荷とリソースを取り合うほか、移動中にクエリが両ティアにまたがると一貫性のあるレイテンシを担保しづらい。さらに「Cold へ落としたデータに対する突発クエリは遅い」という根本的な制約も残り、データ量の増加に従ってこの問題はリニアに悪化する。</p>
+<table>
+<thead>
+<tr>
+<th>摩擦</th>
+<th>Stateful での具体例</th>
+<th>ECS でのアプローチ (詳細は次節以降)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>キャパシティ計画</td>
+<td>ピーク値で Hot/Warm/Cold をサイジング</td>
+<td>オブジェクトストア + 独立オートスケール</td>
+</tr>
+<tr>
+<td>スケール時間</td>
+<td>シャード再配置で segment 全体コピー</td>
+<td>Thin Indexing Shard、ローカルはキャッシュ扱い</td>
+</tr>
+<tr>
+<td>レプリカコスト</td>
+<td>Primary/Replica で書き込み二重処理</td>
+<td>オブジェクトストア耐久性化 (replica 廃止)</td>
+</tr>
+<tr>
+<td>ティア移動</td>
+<td>ILM で Hot→Warm→Cold へ物理移動</td>
+<td>単一の「Indexing/Search」2 ティア構造</td>
+</tr>
+</tbody>
+</table>
+<p>これら 4 つの摩擦は、いずれも「ローカルディスクを SoT としていること」に究極的には起因している。だからこそ ECS は、SoT そのものを差し替えるところから設計を始める。</p>
+<h2 id="23-ecs-の-4-つの設計原則">2.3 ECS の 4 つの設計原則</h2>
+<p>Elastic 自身が「Serve more with Serverless」ブログで明示しているとおり、ECS のアーキテクチャは次の 4 つの原則に基づいている。</p>
+<p><strong>原則 1: Fully decoupled storage and compute (ストレージとコンピュートの完全分離)</strong>
+コンピュートノードのローカルディスクからは永続的な状態を取り除き、すべての durable データ (Lucene の commit, translog, クラスタ状態) をクラウドオブジェクトストア (S3, GCS, Azure Blob) に保管する。ノードはこの SoT のキャッシュ層として振る舞うため、ノード追加/削除は「キャッシュをウォームし直すだけ」の比較的軽い操作となる。これにより Hot/Warm/Cold のようなデータティア概念そのものが消える。</p>
+<p><strong>原則 2: Separate indexing and search tiers (インデックスと検索のティア分離)</strong>
+1 つのノードが Primary かつクエリのコーディネータとして両役を担っていた Stateful 版に対し、ECS では Indexing Node (書き込みと BCC アップロード担当) と Search Node (オブジェクトストア/共有キャッシュからの読み出し担当) を物理的に分離する。書き込みスパイクと検索スパイクのリソースは独立に伸縮でき、たとえばインジェスト負荷が増えても検索レイテンシが影響を受けないという性質が得られる。</p>
+<p><strong>原則 3: Affordable object storage as Source of Truth (オブジェクトストアを SoT に)</strong>
+オブジェクトストアの耐久性 (99.999999999% クラス) と低単価 (GB/月コストはローカル NVMe の数十分の 1) を活かし、レプリカシャードによる物理的な二重書き込みを廃止する。一方でオブジェクトストアは API コール課金とレイテンシの両面で「書き込みが粗い」性質を持つため、Batched Compound Commit (BCC)、translog のノードレベルバッチ (200ms 単位でフラッシュ)、リフレッシュとオブジェクトストア書き込みのデカップリングといった仕掛けで API 呼び出し回数を圧縮する。Elastic は「リフレッシュ起因のオブジェクトストア API コールを 2 桁オーダー削減した」と報告している。</p>
+<p><strong>原則 4: Low latency queries at scale (大規模時の低レイテンシ)</strong>
+原則 3 の代償としてオブジェクトストアからの直接読み出しは数十〜数百ミリ秒の遅延を伴うため、検索ノード側で積極的にローカルキャッシュ (NVMe) を活用し、Lucene segment 単位の並列検索 (segment-level query parallelization) を行うことで応答性を維持する。検索ティアにはユーザが設定できる「Search Power」というパラメータがあり、ローカルキャッシュの保有量と引き換えにレイテンシを調整できる。これは「ストレージ階層を意識せずに済む」原則 1 の世界観で、性能チューニングを一次元の「Search Power」に集約しているとも言える。</p>
+<pre class="hljs"><code><div>[ECS の概念図]
+
+   Indexing Tier (Write Path)                Search Tier (Read Path)
+   ┌──────────────────────────┐              ┌──────────────────────────┐
+   │ Indexing Node            │              │ Search Node              │
+   │  Lucene + translog       │              │  Local NVMe (cache only) │
+   │  ローカル NVMe = cache    │              │  segment-level 並列検索   │
+   └──────────────────────────┘              └──────────────────────────┘
+                │ BCC / batched translog                ▲ pull / cache
+                ▼                                       │
+        ┌──────────────────────────────────────────────────────┐
+        │   Object Store (S3 / GCS / Azure Blob) = SoT          │
+        │   Lucene commit, translog, cluster state              │
+        └──────────────────────────────────────────────────────┘
+</div></code></pre>
+<p>ステートフル版で「ホット・ウォーム・コールド・フローズン」と 4 段に分かれていたティアが、ECS では「Indexing」と「Search」の 2 段に集約され、その下にオブジェクトストアという単一の SoT が横たわる、というのが本節で押さえるべき構図である。</p>
+<h2 id="24-search-ai-lake-というアーキテクチャブランドの位置付け">2.4 Search AI Lake というアーキテクチャブランドの位置付け</h2>
+<p>「Search AI Lake」という名称は ECS の文脈で頻出するが、これは単なるマーケティング上のキャッチコピーではなく、上記 4 つの設計原則を体現するアーキテクチャレイヤを指す技術用語として扱った方が分かりやすい。Elastic は Search AI Lake を「データレイクのストレージ性と Elasticsearch の低レイテンシクエリ性を組み合わせたクラウドネイティブアーキテクチャ」と定義し、ECS のサービスはこの Search AI Lake の上に構築されるという階層関係を明示している。</p>
+<p>技術的には Search AI Lake は次の特性で識別される。第一に、コンピュートとストレージが完全分離されており、データのティアリングが存在しない。第二に、オブジェクトストアを耐久性のある SoT として用い、レプリカインデックスを必要としない。第三に、効率的なキャッシュと segment レベルのクエリ並列化により、大規模データに対して低レイテンシなクエリを維持する。これらはまさに前節で挙げた ECS の設計原則そのものであり、Search AI Lake は「ECS の基盤レイヤとなるアーキテクチャの呼称」と理解するのが正確である。</p>
+<p>その上に、Elastic は次のような価値を Search AI Lake の能力として挙げている。独立したオートスケール、GenAI ワークロード (RAG) のためのベクトル検索/ELSER/トランスフォーマモデル統合、ES|QL による全文検索と時系列分析の統合クエリ、機械学習モデルのネイティブデプロイ、Cross-Cluster Search による真の分散クエリ。これらは Search AI Lake の上に積まれた機能群であり、Elasticsearch Serverless / Observability Serverless / Security Serverless という 3 つの ECS ソリューションは、いずれもこの共通基盤を共有している。</p>
+<pre class="hljs"><code><div>[アーキテクチャの階層関係]
+
+   ┌────────────────────────────────────────────────────┐
+   │ ECS Solutions: Elasticsearch / Observability / Security │ ← 3 つの製品レイヤ
+   ├────────────────────────────────────────────────────┤
+   │           Search AI Lake (基盤アーキテクチャ)         │ ← 本章の主題
+   │  分離 Compute/Storage, OS=SoT, 低レイテンシ実装       │
+   ├────────────────────────────────────────────────────┤
+   │     Object Store (S3 / GCS / Azure Blob)            │ ← クラウド事業者
+   └────────────────────────────────────────────────────┘
+</div></code></pre>
+<p>なお Search AI Lake は当初 AWS の us-east-1 でテクニカルプレビューとして公開され、その後段階的にリージョン拡張が行われてきた経緯がある。リージョンによっては利用できる ECS ソリューションが限られる場合があるため、実運用への適用時には公式ドキュメントの可用性表を確認する必要がある。</p>
+<h2 id="本章のまとめ-1">本章のまとめ</h2>
+<p>本章では Stateful Elasticsearch の構造 (Local NVMe、Primary/Replica、Lucene segment、Hot/Warm/Cold ティア) を分解し、そこに内在する 4 つの摩擦 (キャパシティ計画、スケール時間、レプリカコスト、ティア移動) を確認した上で、これらを解消するために ECS が採用した 4 つの設計原則 (コンピュート/ストレージ分離、インデックス/検索分離、オブジェクトストアを SoT に、低レイテンシ維持) を整理した。これら原則を体現するアーキテクチャレイヤが Search AI Lake であり、ECS のすべてのソリューションはこの共通基盤上に成立している。次章以降では、この設計原則を実装に落とし込んだ書き込みパス (BCC、translog バッチング)、読み出しパス、コントロールプレーン、オートスケーリング機構を順に見ていく。</p>
+<h2 id="参考ドキュメント-1">参考ドキュメント</h2>
+<ul>
+<li>The stateless architecture of Elasticsearch Serverless (Search Labs): https://www.elastic.co/search-labs/blog/elasticsearch-serverless-stateless-architecture</li>
+<li>Serve more with Serverless (Elastic Blog): https://www.elastic.co/blog/elastic-serverless-architecture</li>
+<li>Elastic's Journey to Build Elastic Cloud Serverless (Elastic Blog): https://www.elastic.co/blog/journey-to-build-elastic-cloud-serverless</li>
+<li>Building Elastic Cloud Serverless (Search Labs): https://www.elastic.co/search-labs/blog/building-elastic-cloud-serverless</li>
+<li>Dive into the industry's first Search AI Lake (製品ページ): https://www.elastic.co/cloud/serverless/search-ai-lake</li>
+<li>Announcing Search AI Lake and Elastic Cloud Serverless (Elastic Blog): https://www.elastic.co/blog/search-ai-lake-elastic-cloud-serverless</li>
+<li>Elastic Cloud Serverless (公式ドキュメント): https://www.elastic.co/docs/deploy-manage/deploy/elastic-cloud/serverless</li>
+<li>Compare Elastic Cloud Hosted and Serverless (公式ドキュメント): https://www.elastic.co/docs/deploy-manage/deploy/elastic-cloud/differences-from-other-elasticsearch-offerings</li>
+<li>Serve more with Elastic Cloud Serverless and Search AI Lake (製品ページ): https://www.elastic.co/cloud/serverless</li>
+</ul>
+<hr>
+<h1 id="第3章-ストレージ層の再設計-object-store-を-single-source-of-truth-に">第3章 ストレージ層の再設計: Object Store を Single Source of Truth に</h1>
+<p>Elastic Cloud Serverless (以下 ECS) の中核は、検索エンジンの最も保守的な領域、すなわち「データの永続化レイヤ」を全面的に書き換えた点にあります。本章では、従来の Stateful Elasticsearch がどのようにディスクとレプリカに依存していたか、それを ECS がどのように「2-tier 構造」と「Thin Indexing Shards」へと再構成し、最終的に Object Store (S3 / GCS / Azure Blob) を Single Source of Truth として確立したかを段階的に解説します。Lucene というインデックス実体はそのまま残しつつ、その下のストレージモデルだけが置き換わっている、という構図を意識して読み進めてください。</p>
+<hr>
+<h2 id="31-2-tier-構造-indexing-tier-と-search-tier">3.1 「2-tier 構造」: Indexing tier と Search tier</h2>
+<h3 id="従来の-hot-warm-cold-frozen-からの転換">従来の Hot-Warm-Cold-Frozen からの転換</h3>
+<p>Stateful Elasticsearch では、データの「鮮度」に応じて Hot / Warm / Cold / Frozen の 4 ティアにノードを物理的に分けてきました。Hot ノードは高速 NVMe SSD でアクティブなインデキシングと検索を担当し、Warm はそれより低スペック、Cold は通常のリトリーブのみ、Frozen は Searchable Snapshot 経由でオブジェクトストアからオンデマンド取得という構成です。これはコストとアクセス頻度をマッピングするための合理的な階層でしたが、ノード種別ごとに容量計画と ILM (Index Lifecycle Management) ポリシーをユーザが設計しなければならず、運用負担の主因にもなっていました。</p>
+<p>ECS はこの「データの温度に応じたティア」をすべて廃止します。Search AI Lake のアーキテクチャ説明でも明示されているとおり、ECS は &quot;Eliminates traditional data tiering, allowing updates and rapid queries of both frequently and infrequently accessed data&quot; という設計判断を採っており、すべてのデータは平等にオブジェクトストアに置かれ、検索ノードのローカルキャッシュとの間でだけ「温度差」が現れる構造になります。</p>
+<h3 id="2-tier-に整理した理由">2 tier に整理した理由</h3>
+<p>ECS が残したのは、データの温度軸ではなく <strong>ワークロード軸</strong> に基づく 2 つのティアです。</p>
+<ul>
+<li><strong>Indexing tier (インデックスノード群)</strong>: ドキュメントの取り込み、Lucene セグメント作成、translog 書き込み、オブジェクトストアへのアップロードを担当</li>
+<li><strong>Search tier (検索ノード群)</strong>: クエリ実行、オブジェクトストアおよびローカルキャッシュからのセグメント読み出しを担当</li>
+</ul>
+<p>この分割の本質的な狙いは「インデキシングと検索のリソースを完全にデカップリングすること」にあります。Stateful 版では同一ノード上で書き込みと読み込みが競合し、ピーク時には CPU・I/O・JVM ヒープを取り合っていました。2-tier に分離することで、片方のティアだけを独立してスケーリングできるようになり、後章で述べるオートスケーラもこの分離を前提に動きます。</p>
+<h3 id="各-tier-のノードが何を担当するか">各 tier のノードが何を担当するか</h3>
+<pre class="hljs"><code><div>                       +----------------------------+
+   Client (Bulk API) -&gt;|   Indexing tier (ノード群) |
+                       |  - Lucene buffer/segment   |
+                       |  - Translog (in-memory)    |
+                       |  - 200ms 単位で                |
+                       |    Translog → Object Store |
+                       |  - Refresh 時に検索ノードへ |
+                       |    セグメントを push        |
+                       |  - Flush 時に BCC として     |
+                       |    Object Store へ upload  |
+                       +-------------+--------------+
+                                     |
+                                     v
+                       +----------------------------+
+                       |    Object Store            |
+                       |  (S3 / GCS / Azure Blob)   |
+                       |  - Lucene commits (BCC)    |
+                       |  - Translog                |
+                       |  - Cluster State           |
+                       +-------------+--------------+
+                                     ^
+                                     |
+   Client (Query) -----&gt;+----------------------------+
+                       |    Search tier (ノード群)   |
+                       |  - Object Store から読出   |
+                       |  - ローカル SSD はキャッシュ |
+                       |  - 最新未アップロード分は    |
+                       |    Indexing tier から直接  |
+                       +----------------------------+
+</div></code></pre>
+<p>Indexing tier のノードは、ドキュメントの受領、Lucene の IndexWriter による in-memory バッファリング、リフレッシュごとのセグメント生成、そしてフラッシュ時のオブジェクトストアアップロードまでを担います。Search tier のノードはクエリのみを実行し、ローカル SSD には「キャッシュ」としてしか書き込みません。検索対象データのうち、まだ Indexing tier が Object Store にアップロードしていない最新セグメントについては、リフレッシュ時に Indexing tier から Search tier へ直接 push される設計で、これによって read-after-write のセマンティクスが保たれます。</p>
+<h3 id="lucene-の役割はそのまま永続化先が変わる">Lucene の役割はそのまま、永続化先が変わる</h3>
+<p>ここで強調すべきは、ECS でも <strong>Lucene 自体は何も変わっていない</strong> という点です。インデックスの実体は今までどおり Lucene のセグメントファイル群であり、転置インデックス、doc values、HNSW グラフ等の構造もそのまま流用されます。変わったのは「Lucene が <code>Directory</code> 抽象を介して書き込む先」と「永続化の責任の所在」だけです。Stateful 版では <code>FSDirectory</code> がローカルディスク上のファイルに対して書き込み・fsync を行っていたのに対し、ECS では Lucene の出力するセグメントが最終的に Object Store に置かれた BCC (Batched Compound Commit) としてアップロードされます。Lucene の上位 API (IndexWriter、IndexReader、Query) はそのままなので、クエリプランナや集約処理など Elasticsearch のフロント側の挙動は基本的に互換性が保たれています。</p>
+<hr>
+<h2 id="32-thin-indexing-shards-何がthinなのか">3.2 Thin Indexing Shards: 何が「Thin」なのか</h2>
+<h3 id="従来シャードがthicklocal-state-heavy-だった理由">従来シャードが「Thick」(=local state heavy) だった理由</h3>
+<p>Stateful Elasticsearch のシャードは、ノードに張り付いた重い状態を持っていました。プライマリシャードはローカルディスクに完全な Lucene インデックスを保有し、translog を fsync で永続化し、さらに耐久性のためにレプリカシャード (通常 1〜2 個) を別ノードに置いて同一データを多重に保持する必要がありました。これがいわゆる「Thick (太い) シャード」です。</p>
+<p>この設計には 3 つの本質的なコストが伴いました。第 1 に <strong>ディスク使用量の多重化</strong>: replica=1 なら 2 倍、replica=2 なら 3 倍のストレージを占有します。第 2 に <strong>インデキシングコストの多重化</strong>: クライアントの 1 つの書き込み操作が、プライマリ + すべてのレプリカで実行され、CPU/IO がそのぶん消費されます。第 3 に <strong>リカバリ・リバランス時のデータコピー</strong>: ノード追加・障害時にシャード全体 (数十 GB〜数百 GB) を別ノードへネットワーク経由でコピーする必要があり、スケーリングが遅い主因となっていました。</p>
+<h3 id="thin-シャードのディスクはキャッシュ専用">Thin シャードのディスクはキャッシュ専用</h3>
+<p>ECS の Thin Indexing Shards (および対応する Stateless Search Shards) では、ノード上のローカルディスクは「真実のデータ」を保持しません。Indexing tier のローカルディスクには、まだ Object Store にアップロードされていない最新セグメントと、進行中の Lucene 書き込みバッファが一時的に置かれるだけです。Search tier のローカル SSD はクエリ高速化のための <strong>read-through cache</strong> であり、エビクションされても問題にならない、純粋に消去可能なデータです。</p>
+<p>これが「Thin」と呼ばれる所以です。シャードのアイデンティティは「Object Store 上の BCC 群」というメタデータに収束し、ノード上にはその一部のキャッシュコピーが乗っているだけ、という関係になります。Stateless アーキテクチャの公式説明にもあるとおり、&quot;Shards can be quickly recovered and relocated between nodes, with disks acting only as caches&quot; という性質が、これ以降のすべてのスケーリング特性を支えています。</p>
+<h3 id="シャードの復旧再配置が高速化する原理">シャードの復旧・再配置が高速化する原理</h3>
+<p>Thick シャードの再配置は、ソースノードからターゲットノードへ Lucene セグメントファイル全体をストリーミングコピーする「peer recovery」と呼ばれる重い処理でした。一方、Thin シャードの再配置はまったく異なります。</p>
+<pre class="hljs"><code><div>[Stateful Recovery]                  [ECS Thin Shard Recovery]
+  Node A -- ファイル全体 --&gt; Node B    Cluster State 更新のみ
+  (数十GB〜数百GB のコピー)              (シャード→ノードのマッピング変更)
+  ネットワーク帯域に律速                 Node B は Object Store から
+                                       オンデマンドにセグメントを取得
+  数分〜数十分                          数秒オーダ
+</div></code></pre>
+<p>Thin シャードの再配置で実際に動くのは、cluster state 上の「このシャードを担当するノードは A から B に変わる」というメタデータ更新だけです。新しい担当ノード B は、必要になった時点で Object Store から該当 BCC をローカルキャッシュに pull します。クエリ初回はキャッシュミスが発生しますが、これは pre-warming 等の戦略で緩和可能です。</p>
+<h3 id="スケーリング速度への影響">スケーリング速度への影響</h3>
+<p>このアーキテクチャ差は、オートスケーリング速度に直結します。Stateless アーキテクチャの説明では &quot;There is no need to copy entire segments to relocate shards, so scaling can occur significantly faster than in stateful Elasticsearch&quot; と述べられており、検索ティアにノードを追加してから実際にクエリ処理に参加するまでの所要時間が桁違いに短くなります。これは負荷スパイクに反応するサーバーレスサービスにとって本質的な要件であり、Thin シャードはそのための前提条件と言えます。</p>
+<hr>
+<h2 id="33-オブジェクトストアに置かれるもの">3.3 オブジェクトストアに置かれるもの</h2>
+<h3 id="lucene-commits-segment-files">Lucene commits (segment files)</h3>
+<p>ECS で Object Store にアップロードされる最も大きなデータは Lucene の commit、すなわちセグメントファイル群です。ただし生のセグメントファイルを 1 つずつ PUT しているわけではありません。Stateless アーキテクチャの中核技術として <strong>Batched Compound Commit (BCC)</strong> という独自フォーマットが導入されており、複数の Lucene セグメントファイルをまとめた単一オブジェクトとして Object Store にアップロードされます。</p>
+<p>BCC が必要だった理由は単純で、Object Store の API は呼び出しごとに課金されるためです。Lucene のセグメントは小さなファイル (cfs, si, doc, pos, tim, tip, dvd, dvm, ...) の集合体であり、これらを個別に PUT するとリクエスト数が爆発し、ストレージ単価よりも API コストが支配的になってしまいます。BCC はこれらを 1 オブジェクトにラップしつつ、read-after-write のセマンティクスを保つよう設計されています。読み出し側 (Search tier) は BCC 内のオフセットを使って必要な部分だけをレンジ GET できる仕組みです。</p>
+<h3 id="translog">Translog</h3>
+<p>Lucene の commit は重い処理なので、Stateful 版でも commit と commit の間の書き込みは translog (write-ahead log) で守られていました。ECS でもこの考え方は同じですが、translog の最終的な永続化先がローカルディスクではなく Object Store に変わっています。</p>
+<p>ここで重要な工夫が <strong>バッチトランザクログアップロード</strong> です。シャードごとに個別に translog エントリを Object Store に PUT すると、これも API コストが膨大になります。ECS のインデックスノードは、ノード上のすべてのシャードの translog 書き込みを 200 ミリ秒単位で合体させ (coalesce)、1 回の Object Store オペレーションでまとめてアップロードします。この設計判断によって、ノード上に多数のシャードを抱える状況でも translog 起因の API コストを線形に抑え込むことができています。</p>
+<h3 id="cluster-state">Cluster State</h3>
+<p>ECS では cluster state そのものも Object Store に置かれます。これは設計上重要な意味を持ちます。従来の Elasticsearch では cluster state はマスター候補ノードのディスクに保存され、マスター選出と Raft 風のコンセンサスでクラスタ全体に伝播されていました。ECS ではこの「真実のクラスタ状態」が Object Store 上に存在するため、ノードの入れ替わりやポッドの再起動が起きてもクラスタ状態は損なわれず、新規ノードは Object Store から最新の cluster state を取得してすぐに参加できます。これは Kubernetes 上の Disposable Cluster (ノードやポッドが頻繁に入れ替わる) という運用モデルと整合する設計です。</p>
+<h3 id="これらが-object-store-にある意味-durability-source-の単一化">これらが Object Store にある意味 (durability source の単一化)</h3>
+<p>3 つの種類のデータ (Lucene commits, translog, cluster state) がすべて Object Store に集約されていることのアーキテクチャ的な意義は、<strong>durability source の単一化</strong> にあります。Stateful 版では「ローカルディスクへの fsync + N 個のレプリカへの複製」という複合的な耐久性モデルだったのに対し、ECS では「Object Store に書き終えたら永続化完了」という単一のチェックポイントしか存在しません。</p>
+<pre class="hljs"><code><div>[Stateful の耐久性経路]              [ECS の耐久性経路]
+  Primary local fsync                Indexing node memory
+  + Replica 1 local fsync        →   ↓
+  + Replica 2 local fsync            Object Store PUT 完了
+                                       = 永続化完了
+  → 全部成功で永続化完了
+</div></code></pre>
+<p>これによって、リカバリ手順、レプリカ管理、シャード割り当てのアルゴリズムなど、Elasticsearch 内部の多くのロジックが大幅に単純化されます。一方で、Object Store の可用性とレイテンシ特性に対する依存度が高まるため、後述する BCC バッチング、translog バッファリング、インテリジェント GC といった最適化が不可欠になります。</p>
+<h3 id="s3--gcs--azure-blob-どれが使われるか">S3 / GCS / Azure Blob どれが使われるか</h3>
+<p>ECS は AWS / GCP / Azure の 3 大クラウドで提供されており、各クラウドではそれぞれのネイティブな Object Store を使います。</p>
+<table>
+<thead>
+<tr>
+<th>クラウド</th>
+<th>使用されるオブジェクトストア</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>AWS</td>
+<td>Amazon S3</td>
+</tr>
+<tr>
+<td>GCP</td>
+<td>Google Cloud Storage (GCS)</td>
+</tr>
+<tr>
+<td>Azure</td>
+<td>Azure Blob Storage</td>
+</tr>
+</tbody>
+</table>
+<p>Elastic 側は Object Store の差異を <code>BlobContainer</code> 抽象でラップしており、上位の Stateless ロジックからはどのクラウドでも同じインターフェースで扱えるようになっています。各 Object Store の SLA (代表的には 11-9s 耐久性) と強整合 PUT セマンティクスが、ECS の耐久性モデルの前提となっています。</p>
+<hr>
+<h2 id="34-データ耐久性の新しいモデル">3.4 データ耐久性の新しいモデル</h2>
+<h3 id="ローカルレプリカに頼らない-durability">ローカルレプリカに頼らない durability</h3>
+<p>Stateful Elasticsearch では <code>index.number_of_replicas</code> という設定でレプリカ数を指定するのが必須で、耐久性はこのレプリカ数とディスクの fsync によって担保されていました。ECS ではこの考え方を捨て、<strong>レプリカシャードによる多重化は耐久性のためには使わない</strong> という設計に振り切っています。Stateless アーキテクチャの導入文でも &quot;By offloading durability to a cloud object store, replica shards are no longer needed for durability&quot; と明言されています。</p>
+<p>検索の高可用性やスループット向上の目的でクエリ専用のコピーを別ノードに置くことは依然としてあり得ますが、それは「読み出し並列性のため」であって「データを失わないため」ではありません。書き込みデータの耐久性は完全に Object Store に肩代わりされています。</p>
+<h3 id="ack-タイミングがtranslog-の-object-store-アップロード完了後になること">ack タイミングが「translog の Object Store アップロード完了後」になること</h3>
+<p>ECS におけるドキュメント書き込みの ack セマンティクスは Stateful 版と決定的に異なります。</p>
+<pre class="hljs"><code><div>[Stateful 版の write ack]
+1. Client → Primary 受信
+2. Primary が Lucene buffer / translog 書き込み
+3. Replica へ転送、Replica も同様に書き込み
+4. すべてのレプリカで成功 → Client へ 200 OK
+
+[ECS 版の write ack]
+1. Client → Indexing node 受信
+2. Lucene buffer / translog 書き込み (in-memory)
+3. Translog を Object Store にアップロード
+4. アップロード成功 → Client へ 200 OK
+</div></code></pre>
+<p>ECS の ack は「translog が Object Store に書き終わった時点」で初めて返されます。これによって、ack を受け取った瞬間のデータは Object Store の耐久性 SLA で保護されていることが保証されます。一方で ack レイテンシは Object Store の PUT レイテンシに律速されるため、前述のバッチトランザクログアップロード (200ms 単位で coalesce) によって、レイテンシとスループット、API コストのバランスを取っています。</p>
+<h3 id="object-store-の-11-9s-durability-に依拠する設計判断">Object Store の 11-9s durability に依拠する設計判断</h3>
+<p>S3、GCS、Azure Blob のいずれも公称 11 nine (99.999999999%) の年間オブジェクト耐久性を提供しており、ECS の耐久性保証はこの数字に直接依拠しています。Stateful 版で 3 個のレプリカを別 AZ に置いて得ていた耐久性 (実効的に数 nine) と比べても、Object Store ベースの耐久性は同等以上の水準にあり、かつストレージコストは Block Storage より大幅に安く、複製は Object Store のリージョン内冗長化に内包されています。</p>
+<p>この設計判断のトレードオフは明確で、(a) クラウドベンダの Object Store SLA を完全に信頼する、(b) ack レイテンシが Object Store の PUT に律速される、(c) API コストの最適化 (BCC、バッチ translog、リフレッシュ分離) が必須、の 3 点を受け入れる代わりに、レプリカ管理の複雑さとコストから解放されるというものです。Search Labs の比較実験では、Serverless はステートフル版に対して &quot;P50 で約 2 倍のインデックススループット&quot; を達成しており、「利益の大部分はレプリカシャードへの各操作複製ではなくオブジェクトストア耐久性化から来ている」と報告されています。</p>
+<h3 id="書き込み失敗時のリトライ冪等性">書き込み失敗時のリトライ・冪等性</h3>
+<p>Object Store への PUT は分散システムの常としてしばしば失敗 (タイムアウト、5xx、スロットリング) します。ECS の Indexing tier はこれらの失敗に対してリトライを行いますが、ここで問題になるのが「同じ translog エントリや同じ BCC を二度書きしてしまわないか」という冪等性です。</p>
+<p>ECS はこれを 2 つの仕組みで担保しています。第 1 に、各 BCC とバッチ translog アップロードには <strong>シャード単位の一意 generation ID</strong> が付与されており、Object Store 上のキー (パス) はこの ID を含む決定論的なものになります。同じ generation を再度 PUT してもオブジェクトキーが同じなので冪等です。第 2 に、<strong>インテリジェントガベージコレクション</strong> が動作しており、新しい BCC が成功裏にアップロードされた後で、不要になった古い BCC やリトライ過程で生じた中間オブジェクトを使用状況に基づいて削除します。これによって失敗・リトライの結果としてオブジェクトストアが「ゴミ」で膨れ上がるのを防ぎ、ストレージコストを抑制しています。</p>
+<p>ノード障害時の振る舞いも単純化されています。Indexing node が突然停止しても、ack 済みデータはすべて Object Store にあるので失われません。新たに割り当てられた代替ノードは、Object Store 上の最新 BCC と最新 translog から状態を復元し、未 ack のドキュメントについてはクライアントの再試行に委ねます。レプリカからのリカバリという複雑なシナリオが不要になっており、これは運用シンプル化の大きな要因です。</p>
+<hr>
+<h2 id="本章のまとめ-2">本章のまとめ</h2>
+<p>ECS は、Hot-Warm-Cold-Frozen の 4-tier 構造を Indexing tier と Search tier の 2-tier に再編し、データの永続化責任をローカルディスク + レプリカから Object Store (S3 / GCS / Azure Blob) に完全に移しました。シャードは Thin 化され、ローカルディスクはキャッシュとしてしか使われなくなったことで、シャード再配置とスケーリングは桁違いに高速化しています。Lucene の commit、translog、cluster state という 3 種類の永続データがすべて Object Store に集約され、ack のタイミングは「translog の Object Store アップロード完了」に再定義されました。これらの再設計は BCC、バッチ translog、リフレッシュ分離、インテリジェント GC といった Object Store の API コスト最適化技術とセットで成立しており、次章以降で詳述するオートスケーリングやマルチテナンシ設計の土台になっています。</p>
+<hr>
+<h2 id="参考ドキュメント-2">参考ドキュメント</h2>
+<ul>
+<li>The stateless architecture of Elasticsearch Serverless: https://www.elastic.co/search-labs/blog/elasticsearch-serverless-stateless-architecture</li>
+<li>Elastic's Journey to Build Elastic Cloud Serverless: https://www.elastic.co/blog/journey-to-build-elastic-cloud-serverless</li>
+<li>Serve more with Serverless: https://www.elastic.co/blog/elastic-serverless-architecture</li>
+<li>Building Elastic Cloud Serverless: https://www.elastic.co/search-labs/blog/building-elastic-cloud-serverless</li>
+<li>New Elastic Search AI — available on Elastic Cloud Serverless: https://www.elastic.co/cloud/serverless/search-ai-lake</li>
+<li>Announcing Search AI Lake and Elastic Cloud Serverless to scale low latency search: https://www.elastic.co/blog/search-ai-lake-elastic-cloud-serverless</li>
+</ul>
+<hr>
+<h1 id="第4章-書き込みパス-deep-dive">第4章 書き込みパス Deep Dive</h1>
+<p>本章では、Elastic Cloud Serverless (以下 ECS) における書き込みパスの内部メカニズムを、従来の Stateful Elasticsearch (以下 Stateful 版) と対比しながら詳細に解説します。ECS では、ローカルディスクとレプリカに依存していた耐久性 (durability) の信号源が、クラウドのオブジェクトストア (Object Store) に一本化されています。この変更は単なるストレージ先の変更ではなく、ack タイミング、コミットフォーマット、ガベージコレクションといった書き込みパスのほぼ全ての要素に影響しています。</p>
+<hr>
+<h2 id="41-stateful-版の書き込みフロー-復習">4.1 Stateful 版の書き込みフロー (復習)</h2>
+<p>ECS の設計を理解する前提として、まず従来の Stateful Elasticsearch における書き込みフローを復習します。Stateful 版では、ドキュメントの耐久性は「プライマリシャードのローカルディスク上の translog」と「レプリカシャードへのオペレーション複製」の組み合わせで担保されます。クラスターは事前に確保されたサイズを持ち、シャードはノードに固定的に割り当てられている前提です。</p>
+<p>書き込みリクエストが到着すると、コーディネーターノードは対象シャードのプライマリを保有するノードにオペレーションをルーティングします。プライマリノードでは、まずドキュメントが Lucene のインメモリバッファ (IndexWriter のリングバッファ) に投入され、同時に translog (トランザクションログ) に追記されます。translog は append-only のファイルで、デフォルトで <code>index.translog.durability=request</code> 設定ではリクエストごとに fsync が実行され、ローカルディスクへの永続化が保証されます。</p>
+<p>その後、プライマリノードは同じオペレーションを in-sync な全てのレプリカシャードへ転送します。各レプリカでも同様に Lucene バッファと translog への書き込みが行われ、fsync が完了したらプライマリに ack を返します。プライマリは全レプリカからの ack が揃った時点で初めてクライアントに成功レスポンスを返します。つまり Stateful 版の durability point は「ローカルディスク上の translog fsync」と「レプリカでの同等処理完了」の両者の組み合わせです。</p>
+<p>検索可能化は別ステップです。デフォルト 1 秒間隔で動作する refresh によって、Lucene のインメモリバッファが新しい segment としてオープンされ、検索対象に含まれます。この時点ではまだ segment はディスクに完全コミットされていません。最終的なディスクコミット (Lucene commit) は flush 処理で行われ、translog が切り詰められます。flush は明示的 API か、translog サイズ閾値の到達などによって駆動されます。</p>
+<pre class="hljs"><code><div>[Stateful 版 書き込みフロー]
+Client
+  │
+  ▼
+Coordinator ── route ──► Primary Node
+                          │
+                          │ 1. Lucene buffer + translog (fsync)
+                          │ 2. Replicate to in-sync replicas
+                          │      ├─► Replica#1 (Lucene buf + translog fsync) ─ack─┐
+                          │      └─► Replica#2 (Lucene buf + translog fsync) ─ack─┤
+                          ▼                                                       │
+                       (all acks received) ◄─────────────────────────────────────┘
+                          │
+                          ▼
+                       ack to Client
+        --- (1s 後) refresh → segment open → 検索可能化
+        --- (閾値) flush → Lucene commit (segments_N) + translog 切り詰め
+</div></code></pre>
+<p>ここで重要なポイントは、Stateful 版では「書き込みノード」と「検索ノード」が同一であり、segment や translog のローカル実体が両方のワークロードの基盤になっていることです。レプリカは耐久性とともに検索負荷分散にも寄与します。この前提が、後述のとおり ECS では大きく書き換えられています。</p>
+<hr>
+<h2 id="42-ecs-の書き込みフロー全体像">4.2 ECS の書き込みフロー全体像</h2>
+<p>ECS では、書き込みノードと検索ノードが完全に分離されています。書き込みは Indexing tier の「Indexing node」が担当し、検索は Search tier の「Search node」が担当します。両者の唯一の共有信号源は、クラウドのオブジェクトストア (S3 / GCS / Azure Blob Storage) です。耐久性データである Lucene コミット、translog、クラスター状態のすべてがオブジェクトストアに保存され、レプリカシャードによる耐久性は不要になっています。</p>
+<p>Indexing node に到着したドキュメントは、Stateful 版と同様にまず Lucene バッファと translog に書き込まれます。ここまでは伝統的な振る舞いと変わりません。決定的に異なるのは次のステップです。Indexing node はクライアントに ack を返す前に、translog をオブジェクトストアへアップロードします。translog アップロードが完了して初めて、書き込みオペレーションは「耐久」とみなされ、クライアントに成功レスポンスが返されます。Stateful 版で言うところの fsync + レプリカ ack が、ECS では「Object Store への translog upload 完了」に置き換わっているわけです。</p>
+<p>その後、refresh 処理で Lucene バッファが segment としてオープンされますが、ECS では refresh のたびにオブジェクトストアへ書き込むのではなく、Indexing node から Search node へ直接 segment データを push する仕組みになっています。これにより、refresh 駆動のオブジェクトストア API コール数が「2 桁分削減」されると報告されています。最終的に flush 処理で Lucene コミットが行われ、Batched Compound Commit (BCC) という独自フォーマットにラップされたうえでオブジェクトストアにアップロードされます。BCC の詳細は 4.4 節で扱います。</p>
+<p>Search node 側は、オブジェクトストアからのオンデマンド読み出しとローカルキャッシュ (NVMe など) を組み合わせて検索を行います。BCC のアップロード前の最新データに対しては、Indexing node から直接 push された segment を参照するため、「読み取り後書き込み (read-after-write)」セマンティクスが維持されます。レプリカシャードは存在しません。耐久性はオブジェクトストア (典型的には 11 ナイン超の耐久性を持つマネージドサービス) のみに依存します。ノード障害が発生した場合は、別ノードがオブジェクトストアから状態を取得して引き継ぐだけで済むため、シャード再配置時の segment フルコピーも不要です。</p>
+<pre class="hljs"><code><div>[ECS 書き込みフロー全体像]
+Client
+  │
+  ▼
+Indexing Node
+  │
+  │ 1. Lucene buffer + translog (ローカル)
+  │ 2. translog を Object Store へアップロード ──────────┐
+  │                                                       │
+  │ 3. (アップロード完了) ack to Client                   ▼
+  │                                              [Object Store]
+  │                                              (durability の単一信号源)
+  │ 4. refresh: segment を Search Node に直接 push        ▲
+  │      └─► Search Node (read-after-write を担保)        │
+  │                                                       │
+  │ 5. flush: Lucene commit を BCC にラップし             │
+  │           Object Store へアップロード ────────────────┘
+  ▼
+(レプリカシャード不要 / 耐久性は Object Store のみで担保)
+</div></code></pre>
+<p>レプリカが不要な理由は明快です。レプリカの主目的は (1) 耐久性確保と (2) 検索負荷分散の 2 つでしたが、(1) はオブジェクトストアの耐久性に置き換えられ、(2) は Search tier の独立スケーリングで満たされます。これにより「インデックス側で複製を書く」コストが消え、ベンチマークでは P50 で約 2 倍のインデックススループットが達成されたと報告されています。</p>
+<hr>
+<h2 id="43-translog-の-object-store-アップロードと-ack-戦略">4.3 Translog の Object Store アップロードと ack 戦略</h2>
+<p>ECS における ack の定義を改めて整理します。Stateful 版では「ローカル fsync + レプリカ ack」が durability point でしたが、ECS では「translog がオブジェクトストアにアップロードされた瞬間」が durability point となります。Indexing node のローカルディスクは揮発的なキャッシュにすぎず、ノードが消失してもオブジェクトストアに上がった translog から状態を復元できることが設計の前提です。したがって、translog upload が完了するまではクライアントに ack を返せません。</p>
+<p>この設計はレイテンシ特性に直接的な影響を与えます。ローカル NVMe の fsync が数百マイクロ秒〜数ミリ秒で完了するのに対し、オブジェクトストアへの PUT は典型的には数十ミリ秒オーダーの遅延を持ちます。S3 や GCS は耐久性とスケーラビリティに優れていますが、ローカル SSD のような低レイテンシは提供しません。結果として、「単一ドキュメントの同期書き込み」のような最悪ケースのワークロードでは、ECS の書き込みレイテンシは Stateful Hosted 版より遅くなります。これは設計上のトレードオフであり、論文でも明示的に認められています。</p>
+<p>ただし、この遅延ペナルティはバッチ性のあるインジェスト (バルクインデキシング、ログ取り込みなど) では大きく緩和されます。ECS は後述する 200ms ウィンドウでノードレベルに translog 書き込みを集約するため、1 API コール当たりに多数のドキュメントを束ねられます。その結果、スループット指向のワークロードでは Stateful 版を上回る性能が得られ、論文では「Serverless が P50 で約 2 倍のインデックススループット」を達成しています。利得の大部分は、レプリカへのオペレーション複製コストが消えたことに由来します。</p>
+<p>durability vs latency のトレードオフという観点で要約すると、ECS は「単発・低レイテンシ」よりも「バッチ・高スループット・運用フリー・低 TCO」を最適化したアーキテクチャです。ローカル fsync + レプリカ複製という Stateful 版の同期書き込みを、オブジェクトストア PUT という遠隔だが圧倒的に耐久性の高いオペレーションに置き換えたことが、レイテンシとスループット双方の性質を変えています。ユースケース選定の際は、書き込みレイテンシ要件 (例: 1 ドキュメントあたり数ミリ秒のオンライントランザクション) と、インジェスト形態 (バルクか単発か) を考慮する必要があります。</p>
+<hr>
+<h2 id="44-batched-compound-commit-bcc-の仕組み">4.4 Batched Compound Commit (BCC) の仕組み</h2>
+<p>Lucene における通常の commit は、segments_N ファイルを更新し、参照される segment ファイル群一式をディスク上で原子的に有効化する処理です。Stateful 版ではこれがローカルディスク上で完結するため、コミット数や生成ファイル数のコストはほぼ無視できました。一方 ECS では、各 commit が結果としてオブジェクトストアへの複数 PUT を引き起こすため、コミット頻度がそのまま API コール数に跳ね返り、コストが顕著になります。</p>
+<p>この問題に対する ECS の解は Batched Compound Commit (BCC) です。BCC は、複数の Lucene commit を「ひとつのオブジェクト」にラップする独自フォーマットで、オブジェクトストアへのアップロード単位を集約することで API コール数を削減します。論文では BCC を「カスタム形式でインデックスコミットをラップし、アップロード費用を削減しつつ、読み取り後書き込みセマンティクスを保持する」ものとして紹介しています。物理的には複数 commit ぶんの segment 構成情報が単一の blob に束ねられたうえでアップロードされる形になります。</p>
+<p>ここで重要なのが、read-after-write セマンティクスを壊さない点です。リフレッシュ済みのドキュメントは、BCC がオブジェクトストアに到達する前でも検索結果に現れる必要があります。ECS では、refresh 時に Indexing node が直接 Search node に segment を push する仕組み (4.2 節参照) と組み合わせることで、BCC のアップロードを遅延させても「直近に書き込んだドキュメントは直ちに見える」性質を保っています。BCC は耐久性とコスト効率のための仕組みであり、可視性のクリティカルパスからは外されているわけです。</p>
+<p>API コール削減効果は、コミットの頻度と BCC のバッチサイズで決まります。Lucene の自然なコミット粒度に従ってオブジェクトストアに PUT すると、シャード数 × コミット数のスケールで API コールが発生してしまいますが、BCC によって複数コミットを単一オブジェクトに集約することで、コスト構造を大幅にフラット化できます。同様の発想で translog アップロードもバッチ化されており (4.5 節)、ECS のオブジェクトストア API コスト最適化は「コミットレイヤー」と「translog レイヤー」の双方で行われている、と理解するのが正確です。</p>
+<hr>
+<h2 id="45-200ms-フラッシュと-api-コスト削減">4.5 200ms フラッシュと API コスト削減</h2>
+<p>オブジェクトストアの課金体系は「保存容量」と「API コール数」の 2 軸で構成されます。一般に GET/PUT などのリクエスト単価は小さく見えますが、Elasticsearch のような書き込みスループットの高いワークロードでは、シャード数 × コミット数 × refresh 数 × translog 数のスケールで API コールが発生するため、コスト全体に占める割合が大きくなります。論文や関連ブログでも、API コストが「高インジェストワークロードで予測不能にスケールする」課題として明示的に挙げられています。</p>
+<p>この問題に対する ECS のコアな最適化が、translog アップロードのノードレベルバッチ化と「200ms フラッシュウィンドウ」です。各 Indexing node は、シャード単位の translog 書き込みをノード単位で coalesce (合体) し、200ms ごとにまとめてオブジェクトストアへアップロードします。これにより、1 アップロード API コールに複数シャード・複数オペレーションを束ねられ、API コール数が大幅に削減されます。ブログでは「per-shard translog writes をノードレベルで coalesce し、200ms ごとに flush することで API コスト費用を大幅に削減」と説明されています。</p>
+<p>200ms という具体的なウィンドウサイズには明確な根拠があります。これより短ければ API コール削減効果が薄まり、長すぎれば ack レイテンシが直接悪化します (4.3 節で述べたとおり ack は translog upload 完了に紐づいているため)。200ms は「クライアントが体感する追加レイテンシとして受容可能で、かつ API コール集約効果が十分に得られる」スイートスポットとして選ばれていると解釈できます。バルクインジェストでは 200ms 以内に大量のドキュメントが集まるため、1 PUT 当たりのドキュメント数が大きく、コスト効率が高まります。</p>
+<p>スループット面では、このバッチ化はむしろポジティブに働きます。同期処理を 1 ドキュメントずつシリアルにオブジェクトストアへ送る代わりに、200ms 単位のバルク PUT として処理することで、ネットワーク往復のオーバーヘッドを償却できます。さらに、refresh はオブジェクトストア書き込みから decoupling されており、refresh 駆動の API コール数は「2 桁削減」されています。これら translog バッチ化、refresh decoupling、BCC の三段重ねが、ECS のオブジェクトストアコスト最適化の中核です。</p>
+<hr>
+<h2 id="46-intelligent-garbage-collection">4.6 Intelligent Garbage Collection</h2>
+<p>オブジェクトストアにすべての耐久性データを保存する設計には、もう一つの帰結があります。「不要になったオブジェクトを誰がいつ消すか」という問題です。Stateful 版では、Lucene のセグメントマージ後に古い segment ファイルがローカルディスクから削除され、translog も flush 後に切り詰められるという、ローカルファイルシステム前提の単純な GC で済んでいました。ECS では同じ問題がオブジェクトストア上で発生し、放置すればストレージコストが青天井に膨らみます。</p>
+<p>ECS はこの課題を Intelligent Garbage Collection と呼ばれる仕組みで解決しています。論文では「使用状況追跡 (usage tracking) により、不要になった BCC と translog セグメントを削除し、ストレージコストを削減」する仕組みとして紹介されています。具体的には、各 BCC や translog セグメントが現在どの shard 状態から参照されているかを追跡し、すべての参照が消えた (= マージや新コミットによって不要になった) タイミングで、対応するオブジェクトをオブジェクトストアから削除します。</p>
+<p>ここで Stateful 版との運用上の大きな違いがあります。Stateful 版では、長期保管やリストアのためにスナップショット (snapshot) を別途取得し、それを別のリポジトリに保存する必要がありました。ECS ではオブジェクトストアそのものが record-of-truth であり、追加のスナップショットを取らずとも耐久性が確保されています。したがって、「レプリカを削除する代わりにスナップショットを増やす」というコスト構造にはならず、GC によって積極的に古いオブジェクトを削っていけます。レプリカ削減によるストレージ節約と、追加スナップショット不要によるストレージ節約が両立する設計です。</p>
+<p>GC を「賢く (intelligent)」と呼ぶ理由は、単にコミット完了直後に古いオブジェクトを消すだけではないからです。read-after-write セマンティクスを破らないように、現在進行中の検索リクエストや復元処理が古い BCC を参照していないことを確認する必要があります。また、コミットのバッチ化 (BCC) によって 1 オブジェクトに複数コミットが含まれているため、削除単位の管理もそれに応じて行う必要があります。これらの参照追跡と削除タイミング判断を、ノード間で整合的に行う仕組みが Intelligent Garbage Collection の実装上の主要関心事です。</p>
+<hr>
+<h2 id="本章のまとめ-3">本章のまとめ</h2>
+<p>ECS の書き込みパスは、Stateful 版の「ローカル fsync + レプリカ複製」モデルを、「オブジェクトストアへの translog upload」を durability point とするモデルに置き換えています。これによりレプリカシャードが不要となり、インデックス側のスループットは P50 で約 2 倍に達する一方、単発書き込みのレイテンシはオブジェクトストアの遅延ぶん悪化します。このトレードオフを緩和するために、200ms ウィンドウでのノードレベル translog バッチ化と、複数 Lucene commit を 1 オブジェクトにまとめる Batched Compound Commit (BCC) が組み合わされ、API コストの爆発を抑えています。さらに refresh はオブジェクトストア書き込みから decoupling されたうえで Indexing node から Search node に直接 push され、read-after-write を担保しつつ refresh 駆動の API コールを 2 桁削減しています。最後に Intelligent Garbage Collection が、参照追跡に基づいて不要な BCC と translog を削除し、スナップショット不要のストレージコスト最小化を実現しています。</p>
+<hr>
+<h2 id="参考ドキュメント-3">参考ドキュメント</h2>
+<ul>
+<li>The stateless architecture of Elasticsearch Serverless: https://www.elastic.co/search-labs/blog/elasticsearch-serverless-stateless-architecture</li>
+<li>Building Elastic Cloud Serverless: https://www.elastic.co/search-labs/blog/building-elastic-cloud-serverless</li>
+<li>Elastic's Journey to Build Elastic Cloud Serverless: https://www.elastic.co/blog/journey-to-build-elastic-cloud-serverless</li>
+<li>Serve more with Serverless: https://www.elastic.co/blog/elastic-serverless-architecture</li>
+</ul>
+<hr>
+<h1 id="第5章-読み取り検索パス-deep-dive">第5章 読み取り・検索パス Deep Dive</h1>
+<p>本章では、Elastic Cloud Serverless (以下 ECS) における検索ノード (search node) の内部動作、特にキャッシュ階層、Refresh Decoupling、近リアルタイム性のトレードオフ、およびセグメントレベル並列化による低レイテンシ実現策を掘り下げる。従来の Stateful Elasticsearch では「シャードのローカルセグメントを直接読む」というシンプルなモデルだったが、ECS では永続化の責務がオブジェクトストア (以下 Object Store) に移管された結果、検索パスは「Object Store を真の信号源としつつ、いかにそのレイテンシ・API コスト・データ転送量を隠蔽するか」という設計問題に置き換わっている。</p>
+<hr>
+<h2 id="51-search-node-のキャッシュ階層">5.1 Search Node のキャッシュ階層</h2>
+<p>ECS の検索ノードは、自身のローカルディスクを「永続データの格納場所」ではなく「Object Store のキャッシュ層」として扱う。これは ECS の根本原則である「ストレージとコンピュートの完全分離」と、「シン (Thin) ステートレスシャード」の帰結である。耐久性データ (Lucene コミット、トランザクションログ、クラスタ状態) はすべて Object Store に存在するため、検索ノードのディスクが破損・揮発しても、新しいノードがキャッシュを再構築するだけで業務継続できる。この点が、ローカルディスクをデータの単一所在地として用いる従来 Stateful Elasticsearch との最大の違いである。</p>
+<p>検索ノード上のデータアクセスは概念的に三段階の階層を成す。最上位はメモリ層 (ページキャッシュ・Lucene の各種ヒープ/オフヒープバッファ)、その下にローカルディスクのブロックキャッシュ、さらにその下に共有ストレージとしての Object Store が位置する。クエリが届くと Lucene はまずメモリ上で必要な posting list や doc values を探し、無ければローカルディスクの該当セグメントブロックを参照し、それも無ければ Object Store からブロック単位でフェッチしてローカルディスクに書き込む、というフォールバック動作になる。</p>
+<pre class="hljs"><code><div>                    +-------------------------------+
+  Query  ---------&gt; |  Search Node                  |
+                    |                               |
+                    |  +-------------------------+  |
+                    |  | L1: Memory / Page Cache |  | &lt;- 最速 (μs オーダー)
+                    |  +-----------+-------------+  |
+                    |              | miss            |
+                    |              v                 |
+                    |  +-------------------------+  |
+                    |  | L2: Local Disk Cache    |  | &lt;- 高速 (ms オーダー)
+                    |  |   (Lucene segments)     |  |
+                    |  +-----------+-------------+  |
+                    |              | miss            |
+                    +--------------|-----------------+
+                                   v
+                    +-------------------------------+
+                    | L3: Object Store (S3 / GCS /  |  &lt;- 低速 (10ms~100ms,
+                    |     Azure Blob)               |     かつ API コスト発生)
+                    |   = 単一信号源 (BCC / xlog)   |
+                    +-------------------------------+
+</div></code></pre>
+<p>キャッシュミスが Object Store フェッチを引き起こす点が ECS の経済モデル上の急所となる。Object Store は GB あたりの保管コストは安いが、API コール 1 件あたりの単価とリクエスト/秒のレートで課金される。したがって 1 件のクエリが多数の小さなブロックを Object Store から都度フェッチすると、レイテンシだけでなく金銭コストも比例して膨らむ。ECS はこれを抑えるため、Stateless アーキテクチャ全体で「バッチ化 (Batched Compound Commit / Batched Translog Upload) で書き込み API を集約」「読み出し側はローカルディスクに積極的にキャッシュ」「キャッシュサイズはユーザー設定 &quot;Search Power&quot; でスケール」という方針を取る。</p>
+<p>ただしキャッシュが空の状態 (コールドスタート、または検索ノードのオートスケールイン後の新規ノード追加直後) では大量の Object Store フェッチが発生し、レイテンシが跳ねるという「キャッシュ温め (warming)」の問題が残る。ECS はこの問題に対し複数の手当てを併用している。第一に、後述する Refresh Decoupling によって最新セグメントは Object Store 経由ではなくインデックスノードから検索ノードへ直接プッシュされるため、ホットデータについてはそもそも Object Store を経由しない。第二に、検索ティアのオートスケーリングは「Search Power」というユーザー設定 (ローカルキャッシュ範囲の指示) と検索負荷の双方を見て増減を判定するため、キャッシュ容量を時系列ワークロードに合わせて確保できる。</p>
+<p>時系列データ (ログ・APM・SIEM 等) 向けには「Boost Window」という概念がある。これはオブザバビリティ・セキュリティのソリューションコンテキストにおいて、直近 N 日のデータは検索ノードのローカルキャッシュに常駐させてフル性能で検索可能にし、それより古いデータも Object Store から直接クエリできるがレイテンシは多少劣化する、という設計上の境界線である。デフォルトは 7 日が採用される運用が一般的で、これにより従来の Hot/Warm/Cold/Frozen ティアを廃した代わりに「ローカルキャッシュ温度」を時系列軸で連続的に表現している。Search AI Lake が「データティアリングを撤廃し、頻繁にアクセスされるデータも稀にしかアクセスされないデータも同じく更新・高速クエリ可能」と謳う実体は、この三段階キャッシュ + Boost Window の組み合わせである。</p>
+<hr>
+<h2 id="52-refresh-decoupling-primary--search-node-の直接プッシュ">5.2 Refresh Decoupling: Primary → Search Node の直接プッシュ</h2>
+<p>従来の Stateful Elasticsearch では、検索可視性を担保するメカニズムは「refresh」であった。プライマリシャードが in-memory バッファを Lucene セグメントとしてフラッシュし、ローカルディスクに書き出すと、同一ノード (またはレプリカノード) の検索コンポーネントがそのセグメントを開いて検索可能になる、というモデルである。レプリカシャードについても各レプリカ自身が独立して refresh を行うため、refresh のコストはシャード数 × レプリカ数に比例して掛かる。</p>
+<p>ECS でこのモデルをそのまま持ち込むと、refresh のたびに Object Store へセグメントを書き込む必要が生じる。デフォルトの refresh_interval が 1 秒であるため、シャード数が多いインデックスでは秒間数千～数万件規模の Object Store API コールが発生し、API コストが爆発する。Stateful 版の前提 (ローカルディスクへの書き込みは事実上無料) を素朴に Stateless に持ち込めない、というのが ECS 設計上の最大の難所のひとつであった。</p>
+<p>ECS が採用した解は「Refresh Decoupling」である。インデックスノード (プライマリ) が refresh を行ったとき、新しい Lucene セグメントを <strong>Object Store には書かず</strong>、検索ノードに対して直接プッシュする。Object Store への永続化 (Batched Compound Commit としてのアップロード) は、より粗い粒度の flush タイミングまで遅延される。この設計により、Elastic 公式の表現で「リフレッシュトリガーの Object Store API コール数を 2 桁削減 (a two order of magnitude reduction)」を達成している。</p>
+<pre class="hljs"><code><div>   従来 Stateful Elasticsearch (refresh = ディスク書き込み + open):
+
+   Client ---&gt; Primary --refresh--&gt; Local Disk (segment) --open--&gt; Searchable
+                  \
+                   `--replication--&gt; Replica --refresh--&gt; Local Disk --open--&gt; Searchable
+
+   ECS (Refresh Decoupling):
+
+   Client ---&gt; Index Node
+                  |
+                  |--(1) refresh: in-memory segment 生成
+                  |
+                  |--(2) Push segment ----------------------&gt; Search Node
+                  |                                             (即 open → 検索可能)
+                  |
+                  |--(3) flush タイミングで遅延アップロード
+                  v
+              Object Store (BCC として永続化)
+                  ^
+                  |
+                  +-- (4) 新規/再起動 Search Node はここから埋め直す
+</div></code></pre>
+<p>この方式の鍵は、検索ノード上で「検索可能になるまでの latency」が従来比で悪化しないように見せかけることである。インデックスノードから検索ノードへの転送は同一リージョン内のノード間 RPC であり、Object Store 経由よりはるかに低レイテンシで完了する。よってアプリケーション視点では「ドキュメントを index → 約 1 秒後に検索可能」というセマンティクスが維持される。一方で、永続化責任は Object Store にあるため、検索ノードに転送された新規セグメントはまだ「揮発しうるキャッシュ」の状態であり、検索ノードがクラッシュした場合は別の検索ノードがインデックスノードから再プッシュを受けるか、または flush 済みであれば Object Store から再読み込みする必要がある。</p>
+<p>なお、書き込み側 (インデックスノード) では別途、トランザクションログがノードレベルで集約され 200ms 間隔で Object Store に flush される。これは耐久性 (read-your-writes と障害復旧) を担保するための仕組みであり、Refresh Decoupling とは独立した経路で動作する。両者を組み合わせることで「書き込み耐久性は Object Store + 200ms バッチ translog」「検索可視性は直接プッシュ」という、目的に応じた異なる遅延経路を ECS は実現している。</p>
+<hr>
+<h2 id="53-近リアルタイム性のトレードオフ">5.3 近リアルタイム性のトレードオフ</h2>
+<p>ECS でも refresh_interval は従来同様にユーザーが設定可能であり、デフォルトの 1 秒運用は維持される。Refresh Decoupling のおかげで、refresh のたびに Object Store を叩く必要が無くなったため、refresh_interval を短くした際の主たるコスト要因は「インデックスノード→検索ノードのプッシュ頻度」と「検索ノード側で新規セグメントを open する CPU 負荷」に置き換わる。すなわち Stateful 版では「Object Store API コスト」だったボトルネックが、ECS では「ノード間 RPC とセグメント open コスト」になる、という質的な転換である。</p>
+<p>200ms バッチ translog アップロードは検索可視性そのものには直接影響しない点に注意が必要である。検索可視性 (あるドキュメントが検索ヒットするかどうか) は refresh と Refresh Decoupling 経由の検索ノードへのプッシュで決まる一方、200ms バッチは「クライアントの index API が ack されるタイミング」と「障害発生時にどこまで復旧できるか」を支配する。ECS では「クライアント確認前にトランザクログを Object Store へアップロード」という流れが採用されており (06 章参照)、200ms はその上限遅延である。</p>
+<pre class="hljs"><code><div>   時刻軸:    t0          t0+200ms        t0+1s
+              |              |               |
+   Index API: ack &lt;----------+ (translog batched upload to Object Store)
+              |                              |
+   Search:    invisible -------&gt; visible at next refresh (default 1s)
+              |
+              +--(read-your-writes が必要なら GET /_doc は translog から返す)
+</div></code></pre>
+<p>厳密な read-your-writes と eventual consistency の境界はおおむね以下のように整理できる。第一に、GET API による ID 指定の単一ドキュメント取得は、インデックスノード上のトランザクションログから読まれるため、index 直後でも即座に取得可能である (read-your-writes が成立)。第二に、search API による検索クエリは Lucene のセグメントを介するため、refresh されるまでは新規ドキュメントはヒットしない (近リアルタイム = NRT の制約は従来と同じ)。第三に、Object Store への永続化遅延 (BCC アップロードまでの間) があってもクライアント視点では一貫性は崩れない。これは translog がノードクラッシュ時の復旧ソースとして Object Store 上に既に存在しているためである。</p>
+<p>単一ドキュメントの index → search latency は、おおまかに「translog バッチ flush 待ち (最大 200ms、ただし ack 自体は flush 後)」+「次の refresh まで待つ (最大 refresh_interval、デフォルト 1s)」+「検索ノードへのプッシュと open (通常数十 ms)」の合算となる。最悪ケースでも従来 Stateful 版から大きく悪化しないよう調整されており、論文ベースの実験結果でも「P50/P99 レイテンシは Stateful 版と競争力ある水準を維持」と報告されている。むしろ書き込みスループットについては「50 パーセンタイルで約 2 倍」を達成しているとされ、これはレプリカへの複製コストが Object Store 耐久性化に置き換わったことによる利得である。</p>
+<hr>
+<h2 id="54-segment-level-query-parallelization-と低レイテンシ実現策">5.4 Segment-level Query Parallelization と低レイテンシ実現策</h2>
+<p>Search AI Lake が「低レイテンシ on Object Store」を実現する技術的支柱の一つが、セグメントレベルのクエリ並列化である。従来 Stateful Elasticsearch でも分散検索の並列単位は基本的にシャードであり、1 つのシャード内では Lucene が単一スレッドで複数セグメントを順番に走査するモデルが長らく使われていた (近年は Lucene 自身も intra-segment search の並列化を進めているが、ECS のそれはより踏み込んだ設計と位置づけられる)。</p>
+<p>ECS では、シャード内に存在する複数の Lucene セグメントに対して、検索ノードのスレッドプールから複数スレッドが並列に走査を行う。これにより、シャード数を増やさなくても (= シャード分割によるオーバーヘッドや coordinator マージ負荷を増やさなくても) 検索並列度をハードウェアコア数まで引き上げられる。Object Store からのフェッチが必要なケースでも、複数セグメントの I/O を並列に発行できるため、ネットワークラウンドトリップを実効的に隠蔽できる。</p>
+<pre class="hljs"><code><div>   従来モデル (シャード = 並列単位):
+     Coordinator --&gt; Shard1 (1 thread: seg1-&gt;seg2-&gt;seg3-&gt;...) --&gt; partial result
+                 --&gt; Shard2 (1 thread: ...)                    --&gt; partial result
+                 --&gt; Shard3 (1 thread: ...)                    --&gt; partial result
+                            ^ シャード数を増やさないと並列度が上がらない
+
+   ECS (segment-level parallelization):
+     Coordinator --&gt; Search Node (Shard1)
+                         |--- Thread A --&gt; seg1 (local cache hit)
+                         |--- Thread B --&gt; seg2 (local cache hit)
+                         |--- Thread C --&gt; seg3 (object store fetch, 並列発行)
+                         |--- Thread D --&gt; seg4 (object store fetch, 並列発行)
+                         +-&gt; partial result (intra-shard merge)
+</div></code></pre>
+<p>低レイテンシを支えるもう一つの要素が、Lucene index 形式そのものの最適化である。Search AI Lake の文脈では「optimized Lucene index formats」が明示的に挙げられている。具体的にはオブジェクトストアからのブロック単位ランダムアクセスに馴染むように、posting list や doc values のブロックレイアウト、圧縮粒度、フッタ配置などが調整されている。これにより 1 件のクエリで Object Store からフェッチする必要のあるブロック数を抑え、かつフェッチ単位を効率的なサイズに揃えることで API コストとレイテンシを同時に削減している。キャッシュ階層 (5.1) と Refresh Decoupling (5.2) も含めて「Object Store の高レイテンシ・API 課金特性を、検索体験のレベルでは隠蔽する」ための重層的な工夫と捉えると見通しが良い。</p>
+<p>Cross-region 検索については、Search AI Lake は「真に分散された (truly distributed) クロスリージョン検索」を提供する。これは従来から存在する Cross-Cluster Search (CCS) の発展形であり、各リージョンの Object Store にデータを置いたまま、クエリを各リージョンの検索ノードに分散送信し、結果を coordinator が統合する。データの中央集約 (移送) を必要としないため、データ主権やリージョン間転送コストの観点で有利である。一方で、リージョン間ネットワーク遅延はクエリのテール側レイテンシに直接効くため、ユースケースに応じてリージョン局所化と分散の使い分けが推奨される。</p>
+<hr>
+<h2 id="本章のまとめ-4">本章のまとめ</h2>
+<p>ECS の読み取り・検索パスは、「Object Store を単一信号源としつつ、検索体験は従来 Stateful 版と同等以上のレイテンシで提供する」という一見矛盾する要件を、メモリ/ローカルディスク/Object Store の三段キャッシュ階層と、Refresh Decoupling による Primary → Search Node 直接プッシュという二本柱で解いている。Boost Window によりホットデータをローカルキャッシュに常駐させ、コールドデータは Object Store からセグメントレベル並列で取得することで、Hot/Warm/Cold/Frozen のティア構造を撤廃したまま時系列ワークロードに対応する。refresh_interval 1 秒の NRT セマンティクスは維持され、検索可視性遅延は Stateful 版と本質的に同等のレンジに収まる一方、refresh あたりの Object Store API コールは 2 桁削減されている。Segment-level Parallelization と Lucene index 形式の最適化が「Object Store 上でも低レイテンシ」を支え、クロスリージョン検索はデータを動かさずに分散クエリを可能にしている。</p>
+<hr>
+<h2 id="参考ドキュメント-4">参考ドキュメント</h2>
+<ul>
+<li>The stateless architecture of Elasticsearch Serverless — https://www.elastic.co/search-labs/blog/elasticsearch-serverless-stateless-architecture</li>
+<li>Serve more with Serverless — https://www.elastic.co/blog/elastic-serverless-architecture</li>
+<li>Building Elastic Cloud Serverless — https://www.elastic.co/search-labs/blog/building-elastic-cloud-serverless</li>
+<li>New Elastic Search AI — available on Elastic Cloud Serverless (Search AI Lake) — https://www.elastic.co/cloud/serverless/search-ai-lake</li>
+<li>Announcing Search AI Lake and Elastic Cloud Serverless to scale low latency search — https://www.elastic.co/blog/search-ai-lake-elastic-cloud-serverless</li>
+</ul>
+<hr>
+<h1 id="第6章-ecs-を支えるインフラ-plane">第6章 ECS を支えるインフラ Plane</h1>
+<p>Elastic Cloud Serverless (以下 ECS) は、利用者から見ると「Elasticsearch プロジェクトを作成すれば即座にエンドポイントが払い出され、容量を意識せず利用できる」というシンプルな体験を提供します。しかしその裏側では、複数のクラウドプロバイダー (AWS / Azure / GCP) を横断する大規模な Kubernetes 群と、それを統制するコントロールレイヤーが組み合わさった分散システムが動いています。本章では、ECS の土台を構成する Control Plane / Data Plane の分離、cell-based Kubernetes、Push Model、Disposable Clusters、そして採用された個別の技術スタック (Cilium / Crossplane / 内部 wrapper) を順に掘り下げます。</p>
+<hr>
+<h2 id="61-control-plane--data-plane-の分離">6.1 Control Plane / Data Plane の分離</h2>
+<p>ECS のバックエンドアーキテクチャは、明確に 2 層に分離されています。1 つはユーザーが直接触れる「Control Plane」、もう 1 つが実際の Elasticsearch ワークロードを動かす「Data Plane」です。Elastic の公式ブログ &quot;Building Elastic Cloud Serverless&quot; でも、「The backend infrastructure comprises two primary components: Control Plane と Data Plane」と明示されています。この分離は単なる責務分割ではなく、グローバル / リージョナル、可用性境界、運用ライフサイクルといった複数の軸が一致するように設計されています。</p>
+<p>Control Plane の責務は、プロジェクトのライフサイクル管理と、ユーザー / 組織向けのインターフェイス提供です。具体的には、UI と公開 API、組織とユーザーのアクセス制御、プロジェクトのカタログとメタデータ管理、課金・利用量集計のエントリポイントなどを担います。Control Plane はグローバル (リージョン横断) に存在し、どのリージョンにプロジェクトが作られるか、そのプロジェクトがどの Data Plane クラスタへ配置されるかを「決定する」レイヤーになります。</p>
+<p>Data Plane の責務は、決定されたプロジェクトを実際の Elasticsearch クラスタとして物理的に動かすことです。Data Plane は世界中の CSP リージョン (AWS / Azure / GCP の合計 29 リージョン、ドキュメント &quot;Serverless regions&quot; 時点) に分散して配置された Kubernetes クラスタ群として実装されており、Elasticsearch ノード、Kibana、各種コントローラー、オブジェクトストレージとの仲介プロセスなどがここで稼働します。ユーザーのクエリやインデキシングリクエストは、最終的にすべて Data Plane の Pod に到達します。</p>
+<pre class="hljs"><code><div>+---------------------------------------------------------+
+|                 Control Plane (Global)                  |
+|  - Public UI / API                                      |
+|  - 組織 / ユーザー / RBAC                                |
+|  - プロジェクト管理 (作成・削除・配置決定)               |
+|  - 課金・利用量パイプライン                              |
++----------------------+----------------------------------+
+                       |  Push: project config / desired state
+                       v
++---------------------------------------------------------+
+|                 Data Plane (Per-Region)                 |
+|  Region A (AWS)  |  Region B (Azure)  | Region C (GCP)  |
+|  +-----------+   |  +-----------+     | +-----------+   |
+|  | K8s cell1 |   |  | K8s cell1 |     | | K8s cell1 |   |
+|  | K8s cell2 |   |  | K8s cell2 |     | | K8s cell2 |   |
+|  | K8s cellN |   |  | K8s cellN |     | | K8s cellN |   |
+|  +-----------+   |  +-----------+     | +-----------+   |
+|  Elasticsearch / Kibana / コントローラー / Pod 群        |
++---------------------------------------------------------+
+</div></code></pre>
+<p>この境界を引いた最大の理由は、障害ドメインの局所化です。仮に特定リージョンの Data Plane クラスタが障害を起こしても、Control Plane や他リージョンの Data Plane は影響を受けません。逆に Control Plane が一時的に停止しても、後述する Push Model のおかげで、すでに配布済みの設定で Data Plane は稼働を継続できます。「グローバルなコントロール」と「リージョナルな実行」を疎結合に保つことが、サービス全体の SLO を守る上での前提になっています。</p>
+<hr>
+<h2 id="62-cell-based-kubernetes-リージョン内の複数-k8s-クラスタ">6.2 Cell-based Kubernetes (リージョン内の複数 K8s クラスタ)</h2>
+<p>Data Plane を構成する単位は「リージョンごとに 1 個の巨大な Kubernetes クラスタ」ではありません。ECS は cell-based architecture を採用しており、各リージョン内に独立した複数の Kubernetes クラスタ (= cell) を並べ、その上にプロジェクトを分散配置します。Elastic は &quot;Rather than scaling individual clusters vertically, the system employs a cell-based architecture with multiple independent Kubernetes clusters per region&quot; と明言しています。</p>
+<p>この設計の第一の理由は、Kubernetes そのもののスケール限界です。Kubernetes の制御プレーンは etcd と kube-apiserver に強く依存しており、ノード数・Pod 数・Watch 数が増えるほど etcd の書き込みレイテンシや API server の負荷が高まります。ECS のように 1 リージョンに数万 Pod 規模が予想される環境では、単一クラスタを無理に縦に伸ばすよりも、最初から「ある上限で打ち切ってもう 1 つ並べる」方が運用上はるかに安全です。</p>
+<pre class="hljs"><code><div>        Region (例: AWS us-east-1)
++-----------------------------------------+
+|  Cell 1            Cell 2     ...       |
+| +-----------+    +-----------+          |
+| | K8s API   |    | K8s API   |          |
+| | etcd      |    | etcd      |          |
+| | nodes ... |    | nodes ... |          |
+| | proj A,B  |    | proj C,D  |          |
+| +-----------+    +-----------+          |
+|        |             |                  |
+|        +---+    +----+                  |
+|            v    v                       |
+|        Capacity Pool / Scheduler        |
++-----------------------------------------+
+</div></code></pre>
+<p>第二の理由は、フォールトドメインの局所化です。1 クラスタが障害を起こしても影響範囲はその cell に閉じ、リージョン全体が停止することはありません。これは前節の Control / Data 分離と同じ思想を、リージョン内部にもう一段持ち込んだものと理解できます。Elastic はこの効果を &quot;preventing scaling limits and establishing smaller fault domains&quot; と表現しています。</p>
+<p>第三の理由は、運用ライフサイクルの単純化です。後述する Disposable Clusters の前提とも結びつきますが、cell が独立していれば、ある cell だけを Kubernetes のマイナーバージョン更新の対象にしたり、ある cell だけ AMI を入れ替えたり、最悪の場合 1 cell を破棄して新規 cell に切り替える、といった操作が「リージョン全体を止めずに」できます。プロジェクトの配置決定は Control Plane 側のスケジューラが行い、cell 単位の容量・健全性に応じて適切な cell へプロジェクトを割り当てます。</p>
+<hr>
+<h2 id="63-push-model-による設定配布">6.3 Push Model による設定配布</h2>
+<p>Control Plane と Data Plane の間で「どのプロジェクトをどのクラスタに、どんな設定で動かすか」を伝達する方式として、ECS は明確に Push Model を採用しています。これは、Control Plane が能動的にプロジェクト構成を各 Data Plane クラスタへ送り込むモデルで、Data Plane 側が定期的に Control Plane へ問い合わせる Pull Model とは対照的です。</p>
+<p>Pull Model の場合、各クラスタが独立に Control Plane を polling し、自分が担当すべきプロジェクトを引き取りに行く形になります。一見スケールしやすそうですが、(a) スケジューリングのロジックが Control Plane と Data Plane に分散する、(b) どのクラスタが何を実行しているかの真実が Control Plane だけでは確定しない、(c) Control Plane が一時的に応答しないと Data Plane の polling がリトライを溜め込んでしまう、といった問題があります。Elastic は Push を選んだ理由として &quot;simpler scheduling logic&quot; と &quot;uni-directional dataflow&quot; を挙げています。</p>
+<pre class="hljs"><code><div>   [Push Model: ECS の採用方式]
+
+   Control Plane ----- desired state push -----&gt;  Data Plane Cell
+        ^                                              |
+        |  (status は別チャネル、Data Plane が報告)    |
+        +----------------------------------------------+
+
+   [Pull Model: 採用されなかった案]
+
+   Control Plane &lt;----- polling for assignment -----  Data Plane Cell
+                  (Control Plane 障害時に polling が空転)
+</div></code></pre>
+<p>Push Model の最大の運用上の利点は、Control Plane が短時間止まっても Data Plane の稼働が継続することです。Push は「最新の desired state を一度送り込む」モデルなので、新規プロジェクト作成や設定変更は遅延しますが、既に Push 済みの設定で動いているクラスタは Control Plane と切り離されても問題なくユーザートラフィックを処理できます。これはサービス全体の可用性を考えるうえで非常に重要で、グローバルな Control Plane の障害が即座にリージョナルなデータパスに伝播することを防いでいます。</p>
+<p>スケジューリングロジックを Control Plane に集約できる点もメリットです。プロジェクトをどの cell に置くか、どのリージョンの容量がひっ迫しているか、新規クラスタを増やすべきか、といった判断は一箇所で持っておいた方が整合性を保ちやすく、後述する Capacity Pool との連携も自然になります。</p>
+<hr>
+<h2 id="64-disposable-clusters-と-capacity-pool">6.4 Disposable Clusters と Capacity Pool</h2>
+<p>ECS では Kubernetes クラスタを「壊れたら直す重要なもの」ではなく「壊れたら捨てて新しく作るもの」として扱います。Elastic は &quot;Kubernetes clusters are designed as replaceable, non-critical storage of data&quot; と表現しており、これを Disposable Clusters と呼んでいます。重要な永続データはオブジェクトストレージに置かれているため、Kubernetes クラスタ自体は計算リソースとローカルキャッシュしか保持していない、という前提が成り立つことがこの戦略を可能にしています。</p>
+<p>この前提の意義は、運用上の不確実性を大幅に減らせる点にあります。クラスタを修復するための複雑なリカバリ手順を持つよりも、「壊れた cell からプロジェクトを退避させ、新しい cell に push し直し、古い cell を破棄する」というシンプルなフローに揃えた方が、テスト可能性と再現性が高まります。Kubernetes のアップグレード、CSP 側のメンテナンス、深刻な状態破壊などにも同じ手順で対処でき、運用パターンが収束します。</p>
+<pre class="hljs"><code><div>   [Disposable Clusters の動き]
+
+   故障 cell                         新規 cell
+   +-----------+   project re-push   +-----------+
+   |  cell X   | -------------------&gt; | cell Y    |
+   |  (broken) |   (push from CP)     | (healthy) |
+   +-----------+                      +-----------+
+        |                                   ^
+        | drain / destroy                   |
+        v                                   |
+      [破棄]                          Capacity Pool から払い出し
+</div></code></pre>
+<p>Disposable Clusters と表裏一体なのが Capacity Pool です。「いつでも cell を破棄して新しいクラスタへ移行できる」状態を維持するには、移行先となる余剰容量を常に確保しておく必要があります。ECS では Priority-based Capacity Pool を採用し、用途別・優先度別にプールを管理しています。さらに Proactive Resource Reservation、すなわち「需要が発生する前に CSP からあらかじめ容量を予約しておく」アプローチを取り、突発的な需要やリージョン障害時の退避先確保で &quot;out of capacity&quot; エラーが起きないように設計しています。</p>
+<p>これは見方を変えると、ECS のスケール戦略が「需要が来てから個別に scale-out する」だけでなく、「需要を見越して cell 自体や ノードプールを事前確保しておく」という二段構えになっているということです。Pod レベルのオートスケールは個々の Elasticsearch プロジェクトの負荷に追随し、cell / ノードプールレベルの事前確保は CSP 由来のキャパシティリスクを吸収する、という役割分担になっています。</p>
+<hr>
+<h2 id="65-採用技術スタック">6.5 採用技術スタック</h2>
+<p>ECS の基盤を構築するにあたって、Elastic は既存の自社オーケストレータ (Elastic Cloud Enterprise / ECE) を拡張する道を選びませんでした。代わりに、AWS の EKS、Azure の AKS、GCP の GKE といった CSP マネージド Kubernetes をベースに採用しています。理由は明快で、「クラウドネイティブなマネージド Kubernetes を使う方が、デプロイの加速と運用複雑度の削減に直結する」からです。ECE はオンプレや BYO インフラ向けの優れたオーケストレータですが、3 CSP に同時展開するという目標に対しては、各 CSP の Kubernetes コントロールプレーンを CSP 側に任せた方が、コア機能 (Elasticsearch の serverless 化) に開発リソースを集中できると判断されました。</p>
+<p>ネットワーキングには Cilium が採用されています。Cilium は eBPF (extended Berkeley Packet Filter、Linux カーネル内で安全に小さなプログラムを実行できる仕組み) をベースにした CNI / セキュリティスタックで、従来の iptables ベースの kube-proxy に比べて、ルール数増大に対するパフォーマンス劣化が小さく、L4/L7 ポリシーや観測も同じ仕組みで扱える点が特徴です。Elastic はその採用理由として「tens of thousands of pods per Kubernetes cluster」、つまり 1 クラスタあたり数万 Pod 規模での性能とセキュリティ維持を挙げています。cell の中でも Pod 数は十分に大きいため、CNI レイヤーの効率が cell の上限・運用コストに直結します。</p>
+<p>インフラのプロビジョニングには Crossplane が用いられています。Crossplane は「Kubernetes の API として CSP リソースを宣言的に管理する」ためのオープンソースで、VPC・サブネット・IAM・マネージド DB・S3 バケットといった CSP リソースを Kubernetes の CR (Custom Resource) として表現し、Reconcile ループで望ましい状態に収束させます。Elastic はこれを &quot;declarative configuration による cross-CSP infra 管理&quot; の手段として採用しており、AWS / Azure / GCP それぞれで異なる API を直接叩くのではなく、Kubernetes 流の宣言的モデルに揃えることで、運用ツール・GitOps・監査の取り回しを統一しています。</p>
+<pre class="hljs"><code><div>   [ECS の Kubernetes 上に積まれる層]
+
+   +-----------------------------------------+
+   | Internal Wrappers                       |
+   |  - configuration guarantees             |
+   |  - networking baseline                  |
+   |  - security baseline                    |
+   |  - observability baseline               |
+   |  - capacity management                  |
+   +-----------------------------------------+
+   | Crossplane (declarative cross-CSP infra)|
+   +-----------------------------------------+
+   | Cilium (eBPF networking / policy)       |
+   +-----------------------------------------+
+   | EKS / AKS / GKE (managed K8s)           |
+   +-----------------------------------------+
+   | AWS / Azure / GCP                       |
+   +-----------------------------------------+
+</div></code></pre>
+<p>そして最上段には、Elastic 自身が開発した「内部 wrapper」群が乗ります。これは EKS / AKS / GKE をそのまま使うだけでは満たせない、ECS としての非機能要件 (configuration guarantees、networking baseline、security baseline、observability、capacity management) を担保するためのレイヤーです。例えば、どの CSP のどの cell でも同じ Pod セキュリティポリシーが効いていること、同じメトリクスが同じ名前で取れること、同じ NetworkPolicy のベースラインが効いていること、といった「CSP 横断での均質性」を保証する役割を持ちます。これにより、上位のサービス開発者は「どの CSP のどの cell に乗るか」をほとんど意識せず Elasticsearch の serverless 化に集中できる状態が作られています。</p>
+<hr>
+<h2 id="本章のまとめ-5">本章のまとめ</h2>
+<p>ECS のインフラ Plane は、グローバルな Control Plane とリージョナルな Data Plane の明確な分離、リージョン内を複数の独立した Kubernetes クラスタに刻む cell-based architecture、Control Plane が能動的に設定を配布する Push Model という 3 つの基本構造で成り立っています。これに、クラスタを破棄可能なリソースとして扱う Disposable Clusters と、それを成立させる Priority-based Capacity Pool / Proactive Resource Reservation が組み合わさることで、CSP 由来の容量制約や局所障害がサービス全体に波及しない構造が作られています。技術スタックの面では、自社の ECE を拡張せずに EKS / AKS / GKE を採用し、Cilium で eBPF ベースの高性能ネットワーキングを、Crossplane で宣言的な cross-CSP インフラ管理を実現し、その上に Elastic 独自の wrapper を重ねて 3 CSP の差異を吸収しています。これら一連の選択は、いずれも「グローバル / リージョナル / クラスタ」という 3 つの境界をきれいに分離し、それぞれの境界で障害を局所化することに一貫して向けられている、と整理できます。</p>
+<hr>
+<h2 id="参考ドキュメント-5">参考ドキュメント</h2>
+<ul>
+<li>Elastic's Journey to Build Elastic Cloud Serverless: https://www.elastic.co/blog/journey-to-build-elastic-cloud-serverless</li>
+<li>Building Elastic Cloud Serverless: https://www.elastic.co/search-labs/blog/building-elastic-cloud-serverless</li>
+<li>Elastic Cloud Serverless (Overview): https://www.elastic.co/docs/deploy-manage/deploy/elastic-cloud/serverless</li>
+<li>Serverless regions: https://www.elastic.co/docs/deploy-manage/deploy/elastic-cloud/regions</li>
+</ul>
+<hr>
+<h1 id="第7章-オートスケーリング機構">第7章 オートスケーリング機構</h1>
+<p>ECS の最も外側から見えるユーザー体験は「クラスタサイズを意識しないでよい」という一点に集約される。しかしその裏側では、Kubernetes 上で動く独自のオートスケーリングコントローラが、Indexing tier と Search tier それぞれに対して数秒単位でメトリクスをポーリングし、垂直/水平の両方向にノード数とリソース量を絶え間なく調整している。本章では、なぜ Elastic が Kubernetes 標準の HPA / VPA をそのまま採用しなかったのか、Indexing tier と Search tier でスケール判断指標がどのように異なるのか、Search Power 3 段階と Boost Window がどう VCU 消費に効いてくるのか、そしてなぜ ECS は Stateful Elasticsearch の Autoscaling より大幅に高速にスケールできるのか、を内部メカニズムのレベルで解きほぐしていく。</p>
+<h2 id="71-custom-kubernetes-controllers">7.1 Custom Kubernetes Controllers</h2>
+<p>ECS のデータプレーンは Kubernetes 上に構築されており、原理的には Kubernetes 標準の Horizontal Pod Autoscaler (HPA) や Vertical Pod Autoscaler (VPA) を利用してオートスケールを実現することも可能であったはずである。しかし Elastic は、これらの汎用コントローラをそのまま採用せず、ECS 専用のカスタム Kubernetes コントローラを内製している。Search Labs の解説によれば、ECS の autoscaling は「custom Kubernetes controllers supporting both vertical and horizontal autoscaling」として実装されており、判断材料には「application-level metrics specific to workload types (indexing vs. searching)」が用いられる。</p>
+<p>標準の HPA / VPA を採用しなかった理由は、ECS のスケール対象が一般的な Web アプリケーションとは性質が大きく異なる点にある。HPA はデフォルトでは Pod の CPU 使用率やメモリ使用率といったインフラレベルのメトリクスをもとに増減を決めるが、Elasticsearch の場合「CPU は空いていても、特定インデックスのメモリプレッシャが高い」「ingest がゼロでも shard 数が多いとメモリは消費される」「検索のレイテンシは CPU 使用率ではなく queue 待機時間に強く相関する」といった、アプリケーション固有の指標を見る必要がある。HPA を custom metrics と組み合わせて延命する手もあるが、ECS では Indexing tier と Search tier で見るべき指標が大きく異なり、しかもそれぞれが vertical (1 ノードあたりのリソース) と horizontal (ノード数) の両方を同時に動かす必要があるため、最初から専用コントローラを書き下ろす方が設計上クリーンだったと考えられる。</p>
+<p>このカスタムコントローラは vertical と horizontal の両方をサポートする。Elasticsearch のような JVM ワークロードは、闇雲にノード数を増やしても shard 配置とヒープの関係でリソースを使い切れない局面があるため、まず垂直方向に余裕を確保し、それでも足りなければ水平方向に増やす、といった段階的判断ができることに意味がある。Indexing tier では新規 shard 受け入れのためにヒープに余裕を作る必要があり、Search tier ではローカルキャッシュサイズを大きく取りたいため、いずれも vertical 寄りの判断が先に効く。</p>
+<p>スケール判断は数秒ごとにポーリングされる。Stateless アーキテクチャを解説する Search Labs の記事では、「外部コンポーネントが Elasticsearch Serverless のメトリクスを監視し、数秒ごとにポーリングして各ティアを独立して調整する」と明記されている。Stateful 版 Elasticsearch の autoscaler は典型的にはメトリクスの集約と判断のため分単位の評価サイクルを取っていたが、ECS ではポーリング粒度自体が一桁以上短くなっていることがポイントである。これは後述する「シャード再配置にセグメントコピーを伴わない」というステートレス設計と組み合わさって、はじめてスケール完了までの実時間短縮に結び付く。</p>
+<h2 id="72-indexing-tier-のスケール判断指標">7.2 Indexing tier のスケール判断指標</h2>
+<p>Indexing tier のスケール判断は、Search tier に比べて指標がシンプルである。Search Labs の Stateless アーキテクチャ解説によれば、Indexing tier では「メモリ使用率」と「インジェスション負荷 (ingestion load)」の 2 つを主な増減判定材料とする。VCU 課金の文脈での解説でも、ingest VCU の所要量は「インデックス数 (per-index のメモリ確保)」「ingest rate (CPU 処理量)」「ingest complexity (フィールドマッピング、後処理)」によって決まるとされており、コントローラはこれら application-level の指標を直接見ながら判断している。</p>
+<p>per-index 単位のメモリ消費が独立した次元として扱われている点は重要である。Elasticsearch では、インデックスやデータストリームを 1 つ立ち上げるだけで、Lucene の field info、translog buffer、各種キャッシュなどでベースとなるメモリを消費する。したがって「ingest rate が低くても、インデックス数が多ければメモリは膨らむ」というケースが当然発生する。ECS のオートスケーラは、合計 ingest rate という単一指標ではなく per-index のメモリ消費を見るため、たとえば数千の小さなインデックスを持つテナントでは ingest rate が小さくても適切なベースラインを確保できる。逆にインデックス数を統合 (consolidate) することで Ingest VCU を圧縮できるという公式のコスト最適化ガイダンスも、この per-index 指標の存在と整合的である。</p>
+<p>ingestion load (ingestion rate) は、文字どおり単位時間当たりの取り込みドキュメント数およびバイト数に相関する指標であり、CPU 側のキャパシティ判断を担う。ingest pipeline で grok や enrichment、vectorization といった重い処理が走るとここに乗ってくるため、<code>ingest complexity</code> も間接的にこの軸で吸収される設計と言える。これがしきい値を超えると Ingest VCU が垂直または水平に増やされる。</p>
+<p>Indexing tier のもう 1 つの特徴は、「ingest がゼロなら scale to 0」が許容される点である。Billing dimensions の公式ドキュメントでは Ingest VCU について「This scales to zero during periods without ingestion activity」と明記されており、Search Labs の VCU 解説では「数千インデックスを管理するシステムを除き、ingestion が発生していないときの最小割当はない」とされている。Search tier 側は後述のように baseline を維持しなければならないが、Indexing tier は「書き込みが来ない時間は本当にゼロまで落とす」ことができるため、定常的に書き込みのないテナントにとってはコスト面で大きな意味を持つ。</p>
+<pre class="hljs"><code><div>[Indexing tier の判断指標]
+
+  ingest rate    ─┐
+                  ├─► (vertical)  per-node CPU / RAM 増減
+  per-index mem  ─┘
+                  ├─► (horizontal) Indexing node 数増減
+  index count    ─┘
+
+  ingest rate == 0 が 15 分継続  ─►  scale to 0
+                                     (大量 index 保有テナントを除く)
+</div></code></pre>
+<h2 id="73-search-tier-と-search-power-3-段階">7.3 Search tier と Search Power 3 段階</h2>
+<p>Search tier のスケール判断は、Indexing tier より一段複雑である。Stateless アーキテクチャ解説では、Search tier の判定要素として「メモリ」「検索負荷」「ユーザー設定の Search Power (ローカルキャッシュ範囲)」の 3 つが挙げられている。前 2 つはオートスケーラが自動で見る指標であるが、3 つ目の Search Power はユーザーがプロジェクト設定として明示的に選択するものであり、ベースラインとなるキャパシティおよびローカルキャッシュ範囲に直接効く。</p>
+<p>Search Power の意味は、要するに「Search tier がどの範囲のデータをローカルキャッシュに常駐させ、その分の VCU を常時 baseline として確保しておくか」のレバーである。ECS では durable なデータはオブジェクトストア上にあるため、ローカルキャッシュに乗っていないデータへのクエリはオブジェクトストア (もしくは他ノードのキャッシュ) からの取得を伴い、レイテンシが伸びる。Search Power を高く設定するとローカルキャッシュ容量が増え、より広い範囲の「ホット」データが常駐するため、レイテンシのばらつきが小さくなる代わりに baseline VCU が増えてコストが上がる、というトレードオフとなる。</p>
+<p>3 段階の選択肢が用意されており、Search Labs の VCU/ECU 解説に基づくと次のような位置付けになる。第 1 が <code>On-demand</code> であり、baseline を低めに保ち、必要に応じて autoscaling で増減させる。コストは抑えられるがレイテンシは相対的に変動が大きい。第 2 が <code>Performant</code> であり、低レイテンシを安定して提供しつつ、中程度のスループットに耐える baseline を確保する。第 3 が <code>High-availability</code> であり、高スループット用途に向けてより大きな baseline を恒常的に確保する。公式の価格例ページでも、開発環境 (2 GB searchable data) で On-demand 24 USD/月、Performant 27 USD/月、本番環境 (20 GB searchable data) で On-demand 190 USD/月、Performant 210 USD/月、という比較が示されており、同一データ量でも Search Power の選択で価格が段階的に変わる点が公式に裏付けられている。</p>
+<p>Search Power の効きを語る上で外せないのが Boost Window と Interactive Dataset Size の概念である。Search Labs の VCU 解説では「Interactive dataset size とは、時系列データであれば Boost Window (デフォルト 7 日) に収まるデータ、非時系列データであればプロジェクト全体のデータを指す」と定義されている。Search tier の baseline VCU はこの Interactive Dataset Size を基準として決まるため、時系列ワークロードでは Boost Window を短くすれば baseline は小さくなり、長くすれば「より過去まで素早く検索できる代わりに baseline が増える」という関係になる。Search Power と Boost Window はそれぞれ独立したレバーであり、前者は「ホットデータをどの強度で保持するか」、後者は「どの範囲までをホットとみなすか」を制御していると整理できる。</p>
+<pre class="hljs"><code><div>[Search Power と Boost Window のレバー]
+
+                          ▲ baseline VCU (常時課金)
+                          │                           High-availability
+                          │                       ┌──────
+                          │            Performant │
+                          │        ┌──────────────┘
+                          │  On-demand
+                          │  ┌─────┘
+                          └─────────────────────────────► time
+                          ◄── Boost Window (default 7d) ──►
+                              (Interactive Dataset Size の範囲)
+</div></code></pre>
+<h2 id="74-step-wise-scaling-と-scale-to-zero">7.4 Step-wise Scaling と Scale to Zero</h2>
+<p>ECS の VCU 消費を理解する上で重要なもう 1 つの性質が、step-wise scaling である。Search Labs の VCU/ECU 解説では「VCU consumption operates in steps rather than linearly. A workload consuming 2 VCUs could potentially increase 100-fold before requiring the next scaling tier」と明示されており、線形にじわじわ増えるのではなく、段階的な「踊り場」を持ちながら増える設計になっていることが分かる。たとえば 2 VCUs を消費している小さなワークロードが、おおむね 100 倍程度までスケールアップしても同じ段階のままで処理できる、というのが目安として示されている。</p>
+<p>この step-wise の挙動は、課金予測性と運用安定性の両面で意味を持つ。仮に厳密に線形課金にしてしまうと、わずかな負荷変動がそのまま VCU 値に表れ、月次の請求がノイジーになる。step-wise であれば、ある幅の負荷変動は同じ段の中で吸収され、課金は安定する。一方コントローラ側の視点で見ると、段が変わるタイミング (= スケールが本当に必要なタイミング) が明示的になるため、過剰なフラッピング (頻繁な scale up/down) を避けやすい。Search Power の 3 段階選択と同様に、ECS のスケーリングは「適切な粒度の段階」を設計の核心に据えていると言える。</p>
+<p>Indexing tier については 7.2 で述べたとおり、ingest が止まれば 15 分の非アクティブ期間を経て scale to 0 まで落ちる挙動を取る。Billing dimensions の文書でも Ingest VCU について「scales to zero during periods without ingestion activity」と裏付けられており、開発環境や夜間バッチのような明確に書き込みアイドル期間が存在するワークロードでは、その時間帯の Ingest VCU 課金が事実上発生しないという経済的メリットがある。これは Stateful Elasticsearch ではほぼ実現できなかった性質であり、「書き込みアイドル時間はゼロ円」という発想は ECS で初めて成立する。</p>
+<p>一方、Search tier では baseline を維持する。公式の価格ページにも「Search resources maintain baseline provisioning to ensure instant data queryability, even during idle periods. During active search, you're billed for the full resources used; during idle periods, billing drops to a reduced rate」と明記されており、idle 時に料率は下がるものの完全にはゼロにならない。これは「ユーザーが検索を投げた瞬間に応答できる」必要があるためで、Search tier をゼロまで落としてしまうと、コールドスタートからのキャッシュウォームアップとシャード割当てが完了するまで応答できなくなり、サーバーレスとしての UX が損なわれる。Search Power と Interactive Dataset Size の組み合わせで決まる baseline の VCU 量こそが、ECS が「常に検索可能」であることを保証するために必要な最小限のコストである。</p>
+<pre class="hljs"><code><div>[VCU 消費の step-wise イメージ]
+
+  VCU                             ┌────────  (step N+2)
+                                  │
+                  ┌───────────────┘          (step N+1)
+                  │
+   2  ┌──────────┘                          (step N)
+      │
+   0  ┴─── (Indexing tier idle 15 min → scale to 0) ──► load
+        ▲
+        └ Search tier はここまで落ちず baseline を維持
+</div></code></pre>
+<h2 id="75-stateful-の-autoscaling-との本質的な違い">7.5 Stateful の Autoscaling との本質的な違い</h2>
+<p>最後に、ECS のオートスケーリングが Stateful Elasticsearch のそれと「速度」「設計の自由度」の両面でどう本質的に異なるかを整理する。最大の違いは、シャードの再配置 (relocation) にセグメントの物理コピーを伴うか否か、という一点にある。Stateful Elasticsearch では各ノードが「自分のローカルディスクに格納された Lucene セグメント」を持ち、これが durable なデータの本体である。したがって新ノードを追加してシャードを移動するためには、セグメントファイル全体 (大きい場合は数十〜数百 GB) を旧ノードから新ノードへネットワーク経由でコピーし、ウォームアップを完了させなければスケールアウトが終わったとは言えない。</p>
+<p>これに対し ECS では、durable なデータはオブジェクトストアにのみ存在し、ノードのローカルディスクは「オブジェクトストア上のセグメントへのキャッシュ」でしかない。Stateless アーキテクチャ解説には「Shards can be recovered and relocated between nodes quickly, and disks act as caches only」と明記されており、シャードの再配置はオブジェクトストア上のメタデータ参照を新ノードに渡すだけで完了する。新ノードはその参照をもとに必要なセグメントを必要な分だけオブジェクトストアから引いて、検索クエリを受け始められる。フル復元を待つ必要はない。</p>
+<p>この差は、スケール完了までの実時間に決定的な違いを生む。Stateful 版では、シャード再配置に伴うセグメントコピー、サブシーケンスの同期、ウォームアップを含めるとスケール完了まで「分〜時間」のオーダーがかかることが珍しくなかった。一方 ECS では、ポーリングからの判断 (数秒) と、Pod 起動およびオブジェクトストアからのキャッシュフィル開始 (秒〜分) でスケールが完了するため、感覚的には一桁から二桁オーダーで短い。Search Labs の Stateless アーキテクチャ解説でも、ECS のオートスケーリングは「ステートフル版より大幅に高速」であると明言されており、これは構造上の必然である。</p>
+<pre class="hljs"><code><div>[スケーリング所要時間 (概念図)]
+
+  Stateful Elasticsearch
+  ├─ trigger 検知 ────────────── (分単位の評価サイクル)
+  ├─ 新ノード起動 ────────────── (秒〜分)
+  ├─ シャード割当                  (秒)
+  ├─ セグメントコピー ─────────── (分〜時間: GB級転送)
+  ├─ ウォームアップ ───────────── (分)
+  └─ 受付開始
+   total: 分 〜 時間
+
+  Elastic Cloud Serverless
+  ├─ trigger 検知 ─ (数秒: 高頻度ポーリング)
+  ├─ 新ノード起動 ─ (秒〜分)
+  ├─ シャード割当                  (object store メタデータ参照のみ; 秒)
+  ├─ キャッシュフィル ── (lazy: 受付しながら徐々に進む)
+  └─ 受付開始
+   total: 秒 〜 分
+</div></code></pre>
+<p>ここから導かれる帰結は、ECS のオートスケーラがより細かい粒度・より高い頻度でスケール判断を下せる、ということでもある。Stateful 版で数秒ごとに HPA が反応してしまうと、毎回数十 GB のセグメント移動を引き起こしかねず、現実的にはフラッピング防止のため評価サイクルを長く取らざるを得なかった。ECS では「動かす」コストが圧倒的に低いため、数秒粒度の判断と step-wise の段階制御を組み合わせても運用上破綻しない。これがオートスケーリングという機能そのものの設計自由度を引き上げ、結果として「サーバーレスらしいスケーリング体験」を成立させている。</p>
+<h2 id="本章のまとめ-6">本章のまとめ</h2>
+<p>本章では、ECS のオートスケーリング機構を内部メカニズムの観点から整理した。Elastic は標準の HPA / VPA を採用せず、application-level メトリクスを直接見る独自の Kubernetes コントローラを内製し、Indexing tier と Search tier をそれぞれ vertical と horizontal の両方向で、数秒粒度のポーリングをもとに伸縮させている。Indexing tier はメモリ・ingest rate・per-index メモリ消費を見て、書き込みアイドル時は 15 分で scale to 0 まで落ち、Search tier はメモリ・検索負荷・Search Power (On-demand / Performant / High-availability) の 3 段階と Boost Window に基づく Interactive Dataset Size に応じた baseline を維持する。VCU 消費は線形ではなく step-wise であり、2 VCUs から 100 倍規模まで同段に収まる踊り場を持つことで課金と運用の両安定性を担保する。そして ECS のオートスケーリングが Stateful 版より本質的に速い理由は、durable データがオブジェクトストアにあり、シャード再配置がセグメントの物理コピーを伴わない点に集約される。これにより、スケール完了までの所要時間は Stateful 版の「分〜時間」から「秒〜分」へと一桁以上短縮される。</p>
+<h2 id="参考ドキュメント-6">参考ドキュメント</h2>
+<ul>
+<li>The stateless architecture of Elasticsearch Serverless (Search Labs): https://www.elastic.co/search-labs/blog/elasticsearch-serverless-stateless-architecture</li>
+<li>Building Elastic Cloud Serverless (Search Labs): https://www.elastic.co/search-labs/blog/building-elastic-cloud-serverless</li>
+<li>Elasticsearch Serverless Pricing: VCUs and ECUs Explained (Search Labs): https://www.elastic.co/search-labs/blog/elasticsearch-serverless-pricing-vcus-ecus</li>
+<li>Elasticsearch Serverless Pricing (公式価格ページ): https://www.elastic.co/pricing/serverless-search</li>
+<li>Elasticsearch Serverless Billing Dimensions (公式ドキュメント): https://www.elastic.co/docs/deploy-manage/cloud-organization/billing/elasticsearch-billing-dimensions</li>
+</ul>
+<hr>
+<h1 id="第8章-課金モデル-vcuecu-と-usagebilling-pipeline">第8章 課金モデル: VCU/ECU と Usage/Billing Pipeline</h1>
+<p>Elastic Cloud Serverless (以下 ECS) の課金モデルは、従来の Elastic Cloud Hosted で見られた「ノードサイズ × 時間」の課金から大きく姿を変え、消費ベース (consumption-based) の二層構造を採用しています。利用者は計算リソースを VCU (Virtual Compute Unit) という抽象単位で消費し、その消費量と保存量・転送量・トークン量がすべて ECU (Elastic Consumption Unit) に変換されて請求されます。本章では、VCU と ECU の定義、Search / Ingest / ML それぞれの VCU の挙動差、Storage や Egress、Elastic Inference Service (EIS) の追加課金軸、Project Profile による割当差、そして最後に内部の Usage Pipeline と Billing Pipeline の構造までを掘り下げます。</p>
+<h2 id="81-vcu-virtual-compute-unit-の定義">8.1 VCU (Virtual Compute Unit) の定義</h2>
+<p>VCU は ECS におけるコンピュートリソースの基本単位であり、Elastic の表現では「a fraction of RAM, CPU, and local disk for caching」を表します。すなわち、1 VCU は「概ね 1 GB の RAM 相当のメモリと、対応する CPU 配分、ローカルディスクキャッシュ」をひとまとめにした抽象的なリソース束です。VCU はノード単位ではなく、ワークロード単位で消費が計測される点が従来のホスト型モデルと根本的に異なります。</p>
+<p>VCU は時間単位 (per hour) で課金されます。Elastic Cloud Console 上の料金例では「Ingest VCU $0.14 / Search VCU $0.09 / ML VCU $0.07」といった単価が提示されており、いずれも 1 VCU 1 時間あたりの公称価格として扱われます。実際の課金額は、計測された VCU 時間に単価とリージョン係数を掛け合わせ、最終的に ECU に変換されたうえで顧客に提示されます。</p>
+<p>VCU は用途別に 3 種類に分かれます。第一に Search VCU は検索リクエストの処理に充てられ、第二に Ingest VCU はインデックス書き込みおよびパイプライン処理に充てられ、第三に Machine Learning VCU は ML モデルの推論および埋め込み生成に充てられます。同じプロジェクト内であっても 3 種類の VCU はそれぞれ独立した autoscaler の制御下にあり、互いに干渉せずスケーリングされる設計になっています。これは、後述する Search AI Lake をベースとした Stateless アーキテクチャによってインデックスとクエリを物理的に分離できるからこそ可能になった課金モデルです。</p>
+<table>
+<thead>
+<tr>
+<th>VCU 種別</th>
+<th>主な用途</th>
+<th>公称単価 (時間)</th>
+<th>最小割当</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Search VCU</td>
+<td>クエリ処理、集計、ベクトル検索</td>
+<td>$0.09</td>
+<td>データセットサイズに応じた baseline あり</td>
+</tr>
+<tr>
+<td>Ingest VCU</td>
+<td>インデキシング、ingest pipeline、Transform</td>
+<td>$0.14</td>
+<td>ゼロまでスケールダウン可 (多インデックス時を除く)</td>
+</tr>
+<tr>
+<td>ML VCU</td>
+<td>推論、NLP、埋め込み生成</td>
+<td>$0.07</td>
+<td>デプロイ済みモデルがあれば最低限保持</td>
+</tr>
+</tbody>
+</table>
+<h2 id="82-ecu-elastic-consumption-unit-と-usd-換算">8.2 ECU (Elastic Consumption Unit) と USD 換算</h2>
+<p>ECU は ECS における最終的な請求単位です。Elastic の公式定義によれば「the nominal value of an ECU is $1.00 USD」、すなわち 1 ECU は名目上 1 米ドルに相当します。利用者から見れば、VCU 時間 / ストレージ GB 月 / Egress GB / EIS の百万トークンなど、すべての消費メトリクスは最終的に ECU 単位に集約されたうえで請求書に載ります。この一段階の抽象化があるため、Elastic は内部実装の単価を改定する際にも、利用者側のメンタルモデルを「ECU = ほぼドル」のまま維持できます。</p>
+<p>ECU は前払い (pre-purchased) でも購入可能であり、前払いの場合は割引価格で取得できます。さらに、ECU 残高はホスト型 (Elastic Cloud Hosted) とサーバーレス (ECS) の双方のオファリングで横断的に使えるため、利用者は既存のホスト型契約から段階的に ECS へ移行する際にも残高を無駄にせずに済みます。月次の従量課金 (postpaid) と前払い ECU の併用も可能で、両者の混在ケースでは前払い分を先に消費するのが一般的な挙動です。</p>
+<p>各消費コンポーネントから ECU への変換は、リージョンごとに定義されたレートテーブルに基づいて行われます。たとえば同じ「Search VCU 1 時間」であっても、AWS us-east-1 と Azure japaneast では ECU 換算後の金額が異なる場合があります。これは、各クラウドプロバイダの計算・ストレージ・データ転送コストが地域によって異なる事実を反映しており、Elastic は内部の Billing engine 側で吸収しています。利用者は Cloud Console の Billing 画面で、ECU と USD 換算額の両方を時系列で確認できます。</p>
+<p>換算の流れを概念的に示すと以下のようになります。</p>
+<pre class="hljs"><code><div>[VCU 時間]   ──×── [VCU→ECU rate (region 別)]   ─┐
+[Storage GB月] ──×── [Storage→ECU rate]          │
+[Egress GB]  ──×── [Egress→ECU rate]             ├──&gt;  [合計 ECU]  ── ≒ ──&gt; [USD 請求額]
+[EIS Tokens] ──×── [Tokens→ECU rate]             │
+[他 add-ons] ──×── [各種 rate]                    ─┘
+</div></code></pre>
+<h2 id="83-search--ingest--ml-vcu-の挙動差">8.3 Search / Ingest / ML VCU の挙動差</h2>
+<p>3 種類の VCU は同じ「1 VCU = 1 GB RAM 相当」という抽象を共有しつつも、スケーリングのトリガーと最小割当の扱いがまったく異なります。これらの違いを正しく理解しておかないと、想定外の課金が発生する原因になるため、本節で順に整理します。</p>
+<p>Ingest VCU は比較的単純で、(1) インデックス数、(2) ingestion rate (秒あたり書き込み量)、(3) mapping や ingest pipeline の複雑度、の 3 点で消費量が決まります。インデックス数が多いほど常時保持するメモリ (mapping や translog 関連のメタデータ) が増え、ingestion rate が高いほど CPU が必要になります。重要な特徴として、ingestion が完全に止まれば Ingest VCU はゼロまでスケールダウンします。例外は数千規模の多数インデックスを保持する場合で、メタデータ常駐のための最小割当が発生します。</p>
+<p>Search VCU は、(1) interactive dataset size、(2) search load、(3) Search Power 設定の 3 点で決まります。Interactive dataset size とは「クエリで即座に返せるべきデータの大きさ」を意味し、時系列データであれば Boost Window (既定 7 日) の範囲、非時系列データであればプロジェクト全体のデータ量を指します。Search load はクエリ毎秒、クエリ複雑度、スキャン範囲などから算出されます。Search Power は次の 3 段階から選択でき、それぞれが baseline 容量を変えます。</p>
+<table>
+<thead>
+<tr>
+<th>Search Power</th>
+<th>特性</th>
+<th>baseline</th>
+<th>レイテンシ傾向</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>On-demand</td>
+<td>低 baseline、自動スケール</td>
+<td>低</td>
+<td>やや変動あり (cold start 含む)</td>
+</tr>
+<tr>
+<td>Performant</td>
+<td>中程度の baseline</td>
+<td>中</td>
+<td>安定した低レイテンシ</td>
+</tr>
+<tr>
+<td>High-availability</td>
+<td>高 baseline</td>
+<td>高</td>
+<td>高スループット向け</td>
+</tr>
+</tbody>
+</table>
+<p>Search VCU の特徴として、15 分間 search 活動がなければゼロまでスケールダウンし得る一方、interactive dataset size が大きくなるとデータの即時クエリ可能性を維持するための baseline が必ず確保されます。また、VCU 消費は線形ではなくステップ状に増減し、2 VCU の負荷を 100 倍に増やしても次の段に上がらないケースもあるとされます。これは autoscaler が一定の余裕を持って段階的にリソースを引き上げる設計に起因します。</p>
+<p>ML VCU はデプロイ済みのトレーニング済みモデル数と推論需要に応じて消費されます。重要な特徴は、推論が止まっても最後の使用から約 24 時間メモリに保持される点です。これは ELSER や埋め込みモデルなど、ロードに時間のかかるモデルの cold start 遅延を避けるための仕様で、断続的に推論を実行するワークロードでは「実際の推論時間より長い VCU 時間」が請求される可能性があります。短時間スパイク型のワークロードでは、後述する EIS への切り替えを Elastic 自身が推奨しています。</p>
+<h2 id="84-storage--egress--eis-トークン">8.4 Storage / Egress / EIS トークン</h2>
+<p>VCU 以外にも、ECS にはストレージ・データ転送・EIS トークンという独立した課金軸があります。これらは VCU の上限とは無関係に発生するため、コスト最適化の余地が大きい領域です。</p>
+<p>Storage は「per GB per month」で課金されます。Elasticsearch Serverless では「Retention $0.047 / GB / month」が公称単価であり、Observability では Logs Essentials $0.017、Complete $0.019、Security でも Essentials $0.017、Complete $0.019 と、ソリューションごとに別レートが設定されています。ストレージのカウントは Search AI Lake (オブジェクトストレージ層) 上の at-rest データに対して行われます。注意点として、ベクトル化や enrichment 処理によってインデックスサイズが元データより大きくなるケースが頻繁にあるため、生データ量だけで予算を組むと過小評価になります。たとえば dense_vector フィールドを追加すると、次元数 × 4 バイトに加え HNSW グラフのオーバーヘッドが乗り、元データの数倍に膨らむことも珍しくありません。</p>
+<p>Egress は API 経由でプロジェクトから外へ出るデータに対する課金で、公称単価は $0.05 / GB、Vector profile 含む各プロダクトで概ね 50 GB / 月の無償枠が提供されます。最適化の定石は、検索レスポンスから不要なフィールドを削ることです。Search API では <code>fields</code> パラメータで返却フィールドを限定し、<code>_source</code> の <code>includes</code>/<code>excludes</code> で取得元を絞ることで Egress を大幅に削減できます。特にベクトル系ワークロードでは、ベクトル本体は転送する必要のないことが大半であり、Elastic は「2025 年 10 月以降に作成されたインデックスについては、ベクトルフィールドはデフォルトで応答から自動除外される」仕様変更を実施しました。既存インデックスでも <code>excludes</code> を明示することで同等の効果を得られます。</p>
+<p>Elastic Inference Service (EIS) は ECS に統合された推論サービスで、ML VCU とは別建てで「百万トークンあたり」で課金されます。公称価格は「As low as $0.08 per million tokens」とされ、対象モデルは EIS のモデルカタログに登録された埋め込み・リランカー・LLM のいずれにも適用されます。一方、Elastic Managed LLM のように汎用 LLM を直接呼ぶ場合は別建てで「入力 $4.50 / 出力 $21 per million tokens」が設定されています。推論が定常的に走るユースケース (常時稼働の埋め込みサーバ) では ML VCU が経済的になることもありますが、断続的・突発的なワークロードでは EIS が cold start や常駐コストの観点で有利と Elastic は案内しています。</p>
+<h2 id="85-project-profile-general-purpose-vs-vector-optimized">8.5 Project Profile (General Purpose vs Vector Optimized)</h2>
+<p>ECS の Elasticsearch プロジェクトには、作成時に選択する Project Profile の概念があります。これは VCU 単位の単価そのものを変えるものではなく、同じワークロードに対する VCU 当たりに割り当てられる物理リソース密度を変える設定です。現在は General Purpose と Vector Optimized の 2 種類が提供されています。</p>
+<p>General Purpose は既定のプロファイルで、テキスト検索、ログ分析、ベクトル検索を含む大半のワークロードを想定した標準割当です。BBQ (Better Binary Quantization)、<code>semantic_text</code> フィールド、ELSER のような sparse_vector モデルなど、Elastic が近年提供してきた省メモリ系の技術と組み合わせることで、ベクトル系ワークロードであっても General Purpose で十分実用的なレイテンシとスループットが得られるケースが増えています。Elastic 自身も公式ブログで「many vector workloads perform well on the General Purpose profile at a fraction of the cost」と述べており、Vector Optimized への移行は段階的に判断すべきとしています。</p>
+<p>Vector Optimized は General Purpose 比で「approximately four times more resources」を割り当てるプロファイルで、Elastic は主に「圧縮されていない高次元 dense vector」(uncompressed high-dimensional dense vectors) を扱うユースケース向けに位置付けています。たとえば 1024 次元以上の float32 ベクトルを大量に持ち、量子化を適用していないインデックスでは HNSW グラフの探索とベクトル本体のアクセスにメモリ帯域と容量が必要であり、General Purpose では autoscaler が過剰に VCU を引き上げて結果的に高コストになる場合があります。Vector Optimized はこのような状況で、より少ない VCU 数でレイテンシと吞吐を確保することを狙ったプロファイルです。なお、Vector profile では 50 GB のストレージ無償枠が含まれます。</p>
+<table>
+<thead>
+<tr>
+<th>観点</th>
+<th>General Purpose</th>
+<th>Vector Optimized</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>想定ワークロード</td>
+<td>テキスト検索 / ログ / 量子化済みベクトル</td>
+<td>高次元・非量子化 dense vector</td>
+</tr>
+<tr>
+<td>1 VCU 当たりのリソース密度</td>
+<td>標準</td>
+<td>約 4 倍</td>
+</tr>
+<tr>
+<td>推奨される使用条件</td>
+<td>BBQ / semantic_text / sparse_vector を活用</td>
+<td>float32 高次元ベクトルが主役</td>
+</tr>
+<tr>
+<td>ストレージ無償枠</td>
+<td>標準</td>
+<td>Vector profile 50 GB 含む</td>
+</tr>
+</tbody>
+</table>
+<p>プロファイル選定の実務的な指針としては、まず General Purpose で開始し、BBQ や <code>semantic_text</code>、ELSER などで量子化・スパース化を進めたうえで、それでもベクトル検索の VCU 消費が支配的になる場合に Vector Optimized への移行を検討する、という順序が合理的です。Elastic 側もこの順序を推奨しています。</p>
+<h2 id="86-usage-pipeline-と-billing-pipeline-の内部構造">8.6 Usage Pipeline と Billing Pipeline の内部構造</h2>
+<p>利用者から見ると単純な「消費 → 請求」の関係も、内部的には Usage Pipeline と Billing Pipeline という 2 段階のデータパイプラインで処理されています。Elastic の &quot;Journey to build Elastic Cloud Serverless&quot; ブログでは、これら 2 つを明確に区別しています。</p>
+<p>Usage Pipeline は計測 (metering) の責務を担います。各リージョン上の Kubernetes クラスタ内で動作する Elasticsearch ノード、ML 推論コンポーネント、ingest pipeline、ストレージ層 (Search AI Lake) などが、自身の処理量に基づく metered data を usage-api service に向けて emit します。usage-api service はこれを受信し、プロジェクト ID、リージョン、課金次元 (VCU 種別 / ストレージ / Egress / トークンなど) でエンリッチし、キューイングしたうえでオブジェクトストレージに非同期で書き出します。同期的なクリティカルパスから計測を切り離すことで、ピーク時の計測処理がワークロード自体のレイテンシに干渉しない設計になっています。</p>
+<p>Billing Pipeline は、Usage Pipeline が書き出した metered records を読み取り、ビジネス上の請求単位 (ECU) へと変換します。中心となるのは Transform 処理で、ここで前述のリージョン別レート、VCU 種別ごとの単価、Project Profile 由来の係数、無償枠 (Egress 50 GB / Agent Builder 1,000 executions など) や階層単価 (tiered calculation) が適用されます。Transform の出力は billing engine に渡され、billing engine は最終的な顧客ごとの ECU 残高更新、月次請求書の生成、Cloud Console の Billing 画面に表示するメトリクスの集計などを担います。</p>
+<p>このパイプラインの大きな利点は、計測と請求が完全に非同期 (asynchronous) に分離されている点にあります。万一 Billing engine 側でレート定義に変更が入っても、過去の metered records はオブジェクトストレージに保管されているため、再計算 (replay) によって正しい ECU 値を導出できます。また、計測ロジックを各コンポーネントが独立して emit する設計は、新しい課金軸 (たとえば将来追加されうる別種の VCU や新 API への課金) を導入する際にも、Usage Pipeline 上の event スキーマを拡張するだけで対応可能で、ワークロードコードへの侵襲が小さく抑えられます。</p>
+<p>データの流れを ASCII 図でまとめると以下のとおりです。</p>
+<pre class="hljs"><code><div> ┌──────────────────────────────────────────────────────────┐
+ │  Regional Kubernetes Clusters (per cloud / per region)   │
+ │                                                          │
+ │  ┌───────────┐  ┌───────────┐  ┌────────────┐            │
+ │  │ Search    │  │ Ingest    │  │ ML / EIS   │  ... etc.  │
+ │  │  nodes    │  │  nodes    │  │  workers   │            │
+ │  └─────┬─────┘  └─────┬─────┘  └─────┬──────┘            │
+ │        │ metered events (VCU h, GB, tokens, ...)         │
+ │        ▼                                                 │
+ │  ┌───────────────────────────────────────────┐           │
+ │  │  usage-api service (enrich + queue)       │           │
+ │  └─────┬─────────────────────────────────────┘           │
+ └────────┼─────────────────────────────────────────────────┘
+          │ async batch upload
+          ▼
+   ┌──────────────────────────┐
+   │  Object Storage          │  &lt;-- raw metered records (replayable)
+   │  (cloud blob store)      │
+   └──────────┬───────────────┘
+              │  read
+              ▼
+   ┌──────────────────────────┐
+   │  Transform               │  metered records --&gt; ECUs
+   │  (apply region rates,    │  (region rate, tier, free quota)
+   │   tiered calc, profile)  │
+   └──────────┬───────────────┘
+              │
+              ▼
+   ┌──────────────────────────┐         ┌──────────────────────┐
+   │  Billing Engine          │ ──────▶ │  Cloud Console /     │
+   │  (invoice, ECU balance,  │         │  Invoices / AutoOps  │
+   │   pricing rules)         │         │  for Serverless       │
+   └──────────────────────────┘         └──────────────────────┘
+</div></code></pre>
+<p>なお、利用者側のコスト可視化ツールとしては、Cloud Console の Billing ダッシュボードが消費コンポーネント別・時間軸別の内訳を提供し、AutoOps for Serverless が「どのワークロードが VCU 消費を押し上げているか」のドライバ分析を提供します。前者は請求側 (Billing engine 出力) のビューであり、後者は計測側 (Usage Pipeline 上のメトリクス) のビューであると理解すると、両者の使い分けが整理しやすくなります。</p>
+<h2 id="本章のまとめ-7">本章のまとめ</h2>
+<p>ECS の課金モデルは、VCU を計算リソースの抽象単位、ECU を請求単位として二段階に切り分け、Search / Ingest / ML の 3 種類の VCU、Storage、Egress、EIS トークンといった独立した課金軸を組み合わせて構成されています。Search VCU には baseline 割当があり、Ingest VCU はゼロまでスケール可能、ML VCU はモデルを 24 時間メモリに保持するなど、種別ごとに挙動が大きく異なるため、ワークロード特性に応じた設計判断が必要です。Project Profile では General Purpose を基本に、BBQ や semantic_text、sparse_vector を活用した省リソース化を優先し、それでも限界に達した場合のみ Vector Optimized を選ぶのが合理的です。内部的には Usage Pipeline と Billing Pipeline が非同期に分離され、metered records をいったんオブジェクトストレージに保管してから ECU に変換する設計により、レート改定や新課金軸の追加にも柔軟に対応できる構造が実現されています。</p>
+<h2 id="参考ドキュメント-7">参考ドキュメント</h2>
+<ul>
+<li>Elasticsearch Serverless Pricing: VCUs and ECUs Explained — https://www.elastic.co/search-labs/blog/elasticsearch-serverless-pricing-vcus-ecus</li>
+<li>Elasticsearch Serverless Billing Dimensions — https://www.elastic.co/docs/deploy-manage/cloud-organization/billing/elasticsearch-billing-dimensions</li>
+<li>Elastic Security Serverless Billing Dimensions — https://www.elastic.co/docs/deploy-manage/cloud-organization/billing/security-billing-dimensions</li>
+<li>Elastic Cloud Serverless Pricing and Packaging — https://www.elastic.co/blog/elastic-cloud-serverless-pricing-packaging</li>
+<li>Elasticsearch Serverless Pricing — https://www.elastic.co/pricing/serverless-search</li>
+<li>Elastic Observability Serverless Pricing — https://www.elastic.co/pricing/serverless-observability</li>
+<li>Elastic Cloud Serverless Security Pricing — https://www.elastic.co/pricing/serverless-security</li>
+<li>Elastic's Journey to Build Elastic Cloud Serverless — https://www.elastic.co/blog/journey-to-build-elastic-cloud-serverless</li>
+</ul>
+<hr>
+<h1 id="第9章-セキュリティ接続性運用監視">第9章 セキュリティ・接続性・運用監視</h1>
+<p>Elastic Cloud Serverless (ECS) は「インフラを Elastic 側が抱える」アーキテクチャを採用しているため、セキュリティモデル、ネットワーク接続、運用監視の各レイヤが Elastic Cloud Hosted (ECH) や Self-managed クラスタとは大きく異なる設計になっている。本章では、ECS が前提とする組織レベルの認証モデル (SAML SSO と Unified API Keys)、Private Connectivity の各クラウド対応状況、Cross-project Search による複数プロジェクト横断検索、そして AutoOps for Serverless による課金ドライバの可視化までを順に取り上げる。いずれも「クラスタ単位の管理が消え、組織・プロジェクト単位での管理に統合された」という ECS の構造的特徴を理解するうえで欠かせない要素である。</p>
+<h2 id="91-認証モデル-組織レベル-saml-と-unified-api-keys">9.1 認証モデル: 組織レベル SAML と Unified API Keys</h2>
+<p>ECS の認証モデルで最初に押さえるべき点は、ECH に存在した「deployment レベルの認証 realm」が廃止され、認証管理が Elastic Cloud organization に一元化されていることである。<code>Elasticsearch realms</code> を用いた LDAP / OIDC / SAML を deployment 単位で設定することはできず、Serverless project では「Elastic Cloud SSO only」が原則となる。組織レベル SAML SSO は SAML 2.0 互換の IdP を対象とし、Enterprise サブスクリプションが前提となる。<code>_elastic_domain_challenge</code> という名前の TXT レコードを使ったドメイン所有権検証 (最大 10 ドメイン)、<code>email</code> / <code>firstName</code> / <code>lastName</code> / <code>groups</code> の各 SAML 属性、IdP グループから Elastic Cloud ロールへの自動マッピングなど、運用は組織オーナーがすべて Elastic Cloud Console 上で実施する。注意点として、SSO を enforcement モードに切り替えると非 SSO 経路 (パスワードログイン) は無効化されるため、IdP 障害時に組織から締め出されないよう、Owner 権限を持つ Elastic Cloud API key を予備手段として保持しておくことが公式に推奨されている。</p>
+<p>Serverless 環境におけるロール管理は、組織オーナーが SAML 経由でユーザーを取り込み、IdP 側のグループ属性に紐付いた role mapping によって Cloud Organization ロールを付与する形に統一されている。Hosted で見られた「stack-level role」と「organization role」の二層管理は ECS では存在せず、ロールアサインの単位は organization と project (の中での role_assignments) に整理される。これにより、deployment ごとに別途 user / role を管理する手間が消える一方、IdP 側の groups 属性設計が組織全体のアクセス制御の精度を決めるという、一般的な SAML SSO の運用課題はそのまま残る。IdP 側でグループや属性を変更しても Elastic Cloud には自動反映されないため、定期的な棚卸しを前提とした運用が必要になる。</p>
+<p>ECS のセキュリティ設計でもう一つ重要なのが Unified API Keys である。従来は「control plane (Cloud API)」と「data plane (Elasticsearch / Kibana API)」で別々の認証情報を発行する必要があり、CI/CD・ローテーション・監査ログのいずれもキー種別ごとに分断されていた。Unified API Keys では、1 本の Elastic Cloud API key で <code>api.elastic-cloud.com</code> のコントロールプレーン操作と、Serverless project の Elasticsearch / Kibana エンドポイントへのクエリ・インジェストの双方を扱える。組織オーナーがコンソールまたは Create API key エンドポイントで作成し、デフォルト有効期限は 3 か月、最長 1 年 (または無期限) を選択でき、組織あたり最大 500 本のアクティブキーを保持できる。</p>
+<p>統合といっても権限が無制限になるわけではなく、API key の発行時に project ごとの <code>role_assignments</code> を指定することで、どの project に対しどのロールでアクセスできるかを per-project に絞り込める。たとえば「project A には ingest 用 service account 相当、project B には read-only」のように細かく分割できるため、キー漏洩時の blast radius は対象 project に限定される。低レイテンシでこの per-project 認可を成立させるため、Elastic は API key とロール定義をグローバル / リージョン両方の分散データベースに保存し、各リージョンに配置された IAM サービスがローカルで検証する「globally distributed identity layer」を構築している。これにより、毎クエリごとに中央コントロールプレーンへの往復が発生せず、Unified API Keys は Cross-project Search における横串認証の基盤としても機能する。</p>
+<h3 id="本章-91-のまとめ">本章 9.1 のまとめ</h3>
+<p>ECS の認証は「組織レベル SAML SSO」と「Unified API Keys」の 2 本柱で構成される。deployment 単位の realm は提供されず、ユーザーは IdP の groups 属性 → Elastic Cloud ロールへ自動マッピングされる。Unified API Keys は Cloud / Elasticsearch / Kibana API を 1 本のクレデンシャルで扱える一方、<code>role_assignments</code> による per-project スコープで影響範囲を限定でき、グローバル分散 IAM 層によりリージョン跨ぎの低レイテンシ検証を実現している。</p>
+<h2 id="92-private-connectivity">9.2 Private Connectivity</h2>
+<p>ECS のネットワーク接続は、デフォルトでは公開エンドポイント + IP filtering を組み合わせる方式だが、エンタープライズ用途向けに各クラウドプロバイダの Private Link サービスを利用した private connectivity が用意されている。Serverless project では、Elastic Cloud Hosted と同じく「VPC 内のリソースから Elastic 側へ単方向 (unidirectional) で接続する」モデルとなる。重要なのは、これが Elastic 側の VPC を顧客 VPC にピアリングする方式ではなく、顧客 VPC に作成した VPC Endpoint と Elastic 側の Private Link Service とを Endpoint Service 経由で接続する構造になっている点である。これにより、Elastic 側はトラフィックを受け取るだけで顧客 VPC へ自律的に接続することができず、ネットワーク的にゼロトラスト要件を満たしやすい。</p>
+<p>AWS については AWS PrivateLink が GA 提供されており、Elasticsearch Serverless では VPC Endpoint と DNS レコードを作成するだけで接続可能、Observability / Security の各 Serverless では Observability Complete または Security Analytics Complete のティアが必要となる。Elastic は Serverless 向け private connectivity を当初「Elastic Serverless Plus」アドオンとしてパッケージ化していたが、本レポート執筆時点では Observability Complete と Security Analytics Complete に標準同梱、Elasticsearch Serverless については導入促進期間中は無償、後にオプションの 10% 使用量サーチャージが適用される形に再編されている。Azure Private Link は Hosted では GA、Serverless では Azure / GCP のサポートが計画されている段階で、AWS / Azure / GCP の対応状況に明確な差がある点には注意が必要である。</p>
+<table>
+<thead>
+<tr>
+<th>クラウド</th>
+<th>サービス名</th>
+<th>Hosted</th>
+<th>Serverless</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>AWS</td>
+<td>AWS PrivateLink</td>
+<td>利用可</td>
+<td>利用可 (Elasticsearch は標準、Observability/Security は Complete ティア)</td>
+</tr>
+<tr>
+<td>Azure</td>
+<td>Azure Private Link</td>
+<td>利用可</td>
+<td>ロードマップ (進行中)</td>
+</tr>
+<tr>
+<td>GCP</td>
+<td>Private Service Connect</td>
+<td>利用可</td>
+<td>ロードマップ (進行中)</td>
+</tr>
+</tbody>
+</table>
+<p>各プロバイダ共通の制約として、Elasticsearch transport client は private connection 上ではサポートされない、Managed OTLP エンドポイントへの private 経路は提供されない、Elastic Cloud Console から Kibana への SSO 動線は private connection 越しには通らないため、IdP からの直接 SAML / OIDC 認証や IP filter による回避策が必要、といった事項が公式に明記されている。Azure の場合は 16 リージョンの公開リージョンで service alias が用意されており、<code>australiaeast</code> から <code>southafricanorth</code> まで指定して private endpoint を作成する。AWS は cross-region 接続にも対応しており、deployment と VPC が別リージョンであっても接続可能である。</p>
+<p>接続成立後の Elastic Cloud 側の管理は、「private connection policy」と呼ばれるポリシーオブジェクトを通じて行う。policy に endpoint ID と適用先プロジェクトを紐付け、必要に応じて IP filter を併用することで、特定 VPC からのみアクセスを許可するゼロトラスト的な構成が組める。HOSTED 側にあった「private connection ID の所有権主張 (claim)」機能も提供され、同一組織内での意図しないポリシー適用を防止できる。なお、2026 年 4 月の packaging 変更により Serverless Plus add-on の単独提供は終了し、private connectivity は前述のとおりティア標準機能に再編されているため、契約形態に関する記述は最新の Elastic Cloud 利用規約を都度確認することが望ましい。</p>
+<h3 id="本章-92-のまとめ">本章 9.2 のまとめ</h3>
+<p>ECS の private connectivity は単方向 VPC Endpoint 方式で、AWS PrivateLink はすでに Serverless で GA、Azure / GCP は Hosted のみ GA で Serverless はロードマップ段階である。Observability / Security では Complete ティアが要件となり、Elasticsearch Serverless では導入期間中無償・将来的に使用量サーチャージとなる。transport client・Managed OTLP・Console 経由 Kibana SSO といった一部経路は private 経由では使えず、IP filter や IdP 直接 SAML 認証で補完する設計が前提となる。</p>
+<h2 id="93-cross-project-search">9.3 Cross-project Search</h2>
+<p>Cross-project Search (CPS) は、同一 Elastic Cloud organization に属する複数の Serverless project を「論理的な namespace」として扱い、1 つの origin project から横断検索できるようにする機能である。本レポート執筆時点では technical preview (2026 年 4 月 16 日提供開始) であり、origin project (検索を実行する基点) と linked project (検索対象として連結される) の 2 種類のロールが導入される。Linking は単方向であり、A → B と B → A を両方欲しい場合は双方向に link を張る必要がある。origin あたりの linked project 数は 20 が上限で、<code>.security</code> や <code>.fleet-*</code> などのシステムインデックスは設計上対象外となる。</p>
+<p>CPS の認証・認可は厳格に per-project で評価される。クライアントは Unified API Keys (Elastic Cloud API key) を使って origin project に対して認証し、CPS の内部ロジックが各 linked project に対するロールを評価したうえで、ユーザーが権限を持つ project / index のみクエリ対象として展開する。「Permissions are always evaluated per project」と明記されており、origin で許可されたからといって linked project の権限が引き継がれることはない。なお、project の境界を跨いだ検索には Elastic Cloud API keys が必須で、従来のスタンドアロンな Elasticsearch API key (project 単位で発行された data plane key) は CPS では使えない。</p>
+<p>クエリ面では、<code>project_routing</code> 式や <code>linked-project:index-name</code> 形式の project alias、<code>_origin</code> という予約 ID を用いて、対象 project の絞り込みや除外 (ダッシュ prefix) を表現できる。サポートされる API は async search、ES|QL、multi-search、SQL、field capabilities、scroll など主要な検索系に広がっているが、<code>painless execute</code> API は origin project に対してのみインデックスを解決する例外がある。同様に ML anomaly detection、transforms、data frame analytics ジョブは CPS 非対応である。アラートは linked project のデータを含む結合データセットに対して評価されるため、ルール設計次第では誤検知が増える可能性があり、ダッシュボードもデフォルトで全 linked project へクエリを投げるため、空間 (Kibana spaces) レベルのデフォルトスコープを「This project」「All projects」で適切に設定する運用が推奨される。</p>
+<p>CPS の利用にあたっては solution の同質性に関する制約がある。Elasticsearch / Observability / Security の各 project を組み合わせること自体は可能だが、Observability project は他の Observability project とのみ、Security project は他の Security project とのみ、といった「同一 solution 内」の連結に限定される運用が前提となり、Security / Observability の linked project には Complete ティアが要求される。アーキテクチャパターンとしては、空の origin project が複数の本番 project に link を張る「hub-and-spoke (overview project)」が推奨され、N-to-1 (shared data) や N-to-N (data mesh) は権限管理や障害伝播の観点でリスクが高いとされている。preview 期間中の課金は、Elasticsearch Serverless では origin project の search VCU で federated query を処理する形となり、Security / Observability は課金対象外、GA 後は linked project のデータ保持や inter-project データ転送に課金される予定である。</p>
+<h3 id="本章-93-のまとめ">本章 9.3 のまとめ</h3>
+<p>CPS は origin と linked の単方向リンクで複数 Serverless project を 1 つの検索面に統合する preview 機能で、上限は origin あたり 20 linked、認可は per-project で必ず再評価される。クエリ側は <code>project_routing</code> / project alias / <code>_origin</code> で柔軟にスコープを操作でき、ES|QL を含む主要 API をカバーする一方、Painless execute や ML 系ジョブには制約がある。Solution は同種同士で組むのが基本で、Complete ティアが linked project 側に要求される。GA に向けて課金構造は再設計が進行中である。</p>
+<h2 id="94-autoops-for-serverless">9.4 AutoOps for Serverless</h2>
+<p>ECS の運用監視のフロントエンドとなるのが AutoOps である。AutoOps はもともと Elastic が買収した Opster 由来の Elasticsearch 自動診断ツールで、ECH / ECE / ECK / self-managed と同様に Serverless でも自動セットアップされ、対応リージョンであれば横断で有効化される。料金は subscription レベルを問わず無償で、特筆すべきは AutoOps のメトリクス保存先が Elastic 側のインフラに存在し、顧客側 VCU を消費しない点である。サンプリング間隔は 10 秒で、cluster status、ノード障害、shard 分布、CPU / memory / disk、indexing / search latency、queue depth、slow query、設定ミス、shard / template / mapping 最適化などを継続的に評価する。データ保持期間は 10 日となっている。</p>
+<p>Serverless では AutoOps の UI が「課金ドライバの可視化」に特化した dashboard を持つ。compute 側は Search VCU / Ingest VCU / ML VCU の 3 区分 (1 VCU = 1GB RAM 相当 + 計算能力) で実消費量を時系列表示し、storage 側は Ingest Rate (Observability / Security 用) と Storage Retained (全 solution 共通) の 2 軸でデータ量を追跡できる。これらは Serverless の課金式 (Ingest Rate × ストレージ、Storage Retained × 保持月数、VCU × 実消費時間) と 1 対 1 に対応しており、「請求書を見るまでコスト構造が分からない」という従来型クラウドサービスの課題を構造的に解消する設計となっている。</p>
+<p>加えて、project / index レベルの performance データもダッシュボードから直接参照できるため、たとえば「特定 index への ingest スパイクが Ingest VCU の急増を引き起こした」「ある検索クエリが Search VCU を恒常的に押し上げている」といった因果関係を、課金次元と同じ粒度で追跡できる。ML / 推論ワークロードについては、ML tier の job 単位パフォーマンスやトークン使用量、egress や add-on の billing dimension など、将来的にダッシュボード対象が拡張される予定が公式にアナウンスされている。Stack Monitoring (Metricbeat 経由でクラスタメトリクスを別 Elasticsearch に流す古典的な手法) も併用できるが、ECS では AutoOps が公式に推奨される第一候補と位置づけられている。</p>
+<p>運用観点では、AutoOps が顧客 VCU を消費しないという性質は重要である。Stack Monitoring は監視データそのものを Elasticsearch index に格納するため、本番ワークロードの I/O と容量を圧迫する可能性があるが、AutoOps はそのオーバーヘッドを発生させない。一方で AutoOps の保持期間は 10 日に固定されており、長期トレンド分析や監査用途には別途データ蓄積の仕組みが必要となるため、コンプライアンス要件によっては log delivery (ロードマップ進行中) や独自の ELT パイプラインを併用する設計が現実的になる。</p>
+<h3 id="本章-94-のまとめ">本章 9.4 のまとめ</h3>
+<p>AutoOps for Serverless は自動セットアップで全対応リージョンに有効化され、10 秒粒度のサンプリングで cluster 健全性から課金ドライバ (Ingest Rate / Storage Retained / Search・Ingest・ML VCU) までを一元可視化する。メトリクス自体は Elastic 側に保管されるため顧客の VCU を消費せず、Stack Monitoring に比べて運用負荷が低い。保持期間が 10 日と短いこと、長期トレンド分析や監査ログは別途仕組みが必要になる点には留意が必要である。</p>
+<h2 id="参考ドキュメント-8">参考ドキュメント</h2>
+<ul>
+<li>Configure Elastic Cloud SAML Single Sign-On: https://www.elastic.co/docs/deploy-manage/users-roles/cloud-organization/configure-saml-authentication</li>
+<li>Elastic Cloud API Keys: https://www.elastic.co/docs/deploy-manage/api-keys/elastic-cloud-api-keys</li>
+<li>Unified API Keys for Elastic Cloud Serverless and Elasticsearch: https://www.elastic.co/search-labs/blog/elastic-cloud-api-keys-unified-serverless</li>
+<li>Private Connectivity: https://www.elastic.co/docs/deploy-manage/security/private-connectivity</li>
+<li>Private Connectivity with AWS PrivateLink: https://www.elastic.co/docs/deploy-manage/security/private-connectivity-aws</li>
+<li>Private Connectivity with Azure Private Link: https://www.elastic.co/docs/deploy-manage/security/private-connectivity-azure</li>
+<li>Elastic Serverless Plus Add-on with AWS PrivateLink: https://www.elastic.co/blog/serverless-plus-aws-privatelink</li>
+<li>Cross-Project Search Configuration: https://www.elastic.co/docs/deploy-manage/cross-project-search-config</li>
+<li>Cross-Project Search in Elastic Cloud Serverless: https://www.elastic.co/docs/explore-analyze/cross-project-search</li>
+<li>Cross-Project Search for Elastic Cloud Serverless (Tech Preview Blog): https://www.elastic.co/blog/cross-project-search-serverless-tech-preview</li>
+<li>AutoOps - Elasticsearch Diagnostics Platform: https://www.elastic.co/docs/deploy-manage/monitor/autoops</li>
+<li>AutoOps for Elastic Cloud Serverless: https://www.elastic.co/docs/deploy-manage/monitor/autoops/autoops-for-serverless</li>
+<li>Monitoring Elastic Stack: https://www.elastic.co/docs/deploy-manage/monitor</li>
+</ul>
+<hr>
+<h1 id="第10章-ecs-の制限事項と-hosted-との機能差分">第10章 ECS の制限事項と Hosted との機能差分</h1>
+<p>Elastic Cloud Serverless (ECS) は、Elastic Cloud Hosted (ECH) や Self-managed が前提としていた多くの低レベル API・設定・プラグインを意図的に切り離すことで、運用負担を Elastic 側に集約している。ECH のつもりで設計したアプリケーションを ECS にそのまま持ち込むと、ILM や Watcher、custom plugin、scripted metric aggregations のような機能が無効化されているために動作しない、というケースが発生する。本章では、ECS で利用できなくなった機能、置き換えられた機能、推奨される運用上の上限値を整理し、Hosted との機能差分を実装観点で俯瞰する。</p>
+<h2 id="101-ilm-廃止と-data-stream-lifecycle">10.1 ILM 廃止と Data Stream Lifecycle</h2>
+<p>ECS では Index Lifecycle Management (ILM) が廃止され、データ管理の中心は Data Stream Lifecycle (DSL) に統合されている。これは ECS が Search AI Lake に基づく単一の object storage tier をシステムオブレコードとして採用しており、hot / warm / cold / frozen といった「ノード上の物理 tier に index を移動させる」という ILM の前提自体が成立しないためである。データは常にオブジェクトストレージ上にあり、search node のキャッシュ層 (Search Boost Window 内の time-series データなど) でホットセットを保持するか否か、という設計に置き換わる。</p>
+<p>DSL は時系列データを念頭にした data stream 単位のライフサイクル管理で、<code>retention</code> (どれだけ保持するか)、<code>downsampling</code> (集計粒度を粗くする)、自動 rollover などを宣言的に扱える。一方、ILM が提供していた phase 単位の rollover トリガ、searchable snapshot への移行、レプリカ数の段階的変更、shard allocation の制御といった低レベル操作は DSL の対象外であり、ECS では Elastic 側のオートスケール / シャーディング機構が代替する。<code>Search Power</code> (On-demand / Performant / High availability) と <code>Search Boost Window</code> を組み合わせて、どの時間範囲の data stream を search-ready cache に載せるかをチューニングする運用が、ECS における旧 ILM tier 設計の置き換えと位置づけられる。</p>
+<p>ECH のユーザーが ECS に移行する際には、既存 ILM ポリシーをそのまま DSL にマッピングできるとは限らない点に注意が必要である。たとえば「7 日 hot → 30 日 warm → 90 日 cold → 1 年 frozen → 削除」のようなポリシーは、ECS では「Data Retention = 1 年、Search Boost Window = 7〜30 日相当」といった形で再表現することになり、tier の物理的な区切りは保持されない。代わりに、頻繁にアクセスされるレンジ外のクエリでもオブジェクトストレージから直接読み出すアーキテクチャによってカバーされる (ただしレイテンシ特性は変わる)。</p>
+<h3 id="本章-101-のまとめ">本章 10.1 のまとめ</h3>
+<p>ECS では ILM が廃止され、DSL に統合された。phase 別の tier 移動、searchable snapshot への手動移行、レプリカ調整といった低レベル操作はオートスケールに吸収される。tier 概念は <code>Search Power</code> と <code>Search Boost Window</code> という「キャッシュ運用のチューニング」に置き換わり、ECH の ILM ポリシーをそのまま流用する設計は再評価が必要となる。</p>
+<h2 id="102-利用不可な-api--設定--プラグイン">10.2 利用不可な API / 設定 / プラグイン</h2>
+<p>ECS では cluster / node レベルの設定 API が完全に Elastic 管理者専有となっており、ユーザーが設定できるのは index レベルの一部 setting のみである。具体的には infrastructure 系 API (cluster settings、nodes API、shard allocation の手動操作)、snapshot API、custom plugin のインストールなどが利用不可で、これらはマルチテナント環境での安全性と Elastic 側のオートスケール責務の境界を守るために遮断されている。Custom plugin が必要なケースでは、ECS の代替としてビルトインのプロセッサや ES|QL の組み込み関数、Inference API 経由のモデル呼び出しなどを用いる設計に切り替える必要がある。</p>
+<p>Watcher は ECS では提供されず、Kibana Alerts (Rule API) が代替手段として位置づけられている。Watcher 互換のスクリプトベース条件式や HTTP / Webhook アクションも、Kibana Alerts のコネクタフレームワーク (Slack / Webhook / Email / PagerDuty / ServiceNow など) で再実装する必要がある。Scripted metric aggregations と join field の利用も不可で、後者については ES|QL の <code>LOOKUP JOIN</code> が公式の置き換えとされている。Behavioral analytics (検索ユーザー行動の収集と分析機能) も ECS では非対応である。</p>
+<table>
+<thead>
+<tr>
+<th>機能カテゴリ</th>
+<th>ECH</th>
+<th>ECS</th>
+<th>ECS 上の代替</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Index Lifecycle Management</td>
+<td>利用可</td>
+<td>廃止</td>
+<td>Data Stream Lifecycle</td>
+</tr>
+<tr>
+<td>Watcher</td>
+<td>利用可</td>
+<td>不可</td>
+<td>Kibana Alerts (Rule API)</td>
+</tr>
+<tr>
+<td>Custom plugins</td>
+<td>利用可</td>
+<td>不可</td>
+<td>ビルトイン processor / Inference API</td>
+</tr>
+<tr>
+<td>Snapshot / Restore API</td>
+<td>利用可</td>
+<td>計画中</td>
+<td>(現状なし)</td>
+</tr>
+<tr>
+<td>Scripted metric aggregations</td>
+<td>利用可</td>
+<td>不可</td>
+<td>ES</td>
+</tr>
+<tr>
+<td>Join field</td>
+<td>利用可</td>
+<td>不可</td>
+<td>ES</td>
+</tr>
+<tr>
+<td>Behavioral analytics</td>
+<td>利用可</td>
+<td>不可</td>
+<td>(個別実装)</td>
+</tr>
+<tr>
+<td>Cluster / node settings API</td>
+<td>利用可</td>
+<td>不可</td>
+<td>Elastic 管理</td>
+</tr>
+<tr>
+<td>Audit logging</td>
+<td>利用可</td>
+<td>計画中</td>
+<td>(現状なし)</td>
+</tr>
+<tr>
+<td>Authentication realms (LDAP/OIDC/SAML at deployment)</td>
+<td>利用可</td>
+<td>不可 (組織 SAML SSO のみ)</td>
+<td>Elastic Cloud SSO</td>
+</tr>
+</tbody>
+</table>
+<p>API 互換性に関しては、ES|QL や <code>_search</code>、<code>_bulk</code> といった主要なデータプレーン API はそのまま利用可能で、stateless 化に伴うレプリケーション制御 API (<code>_pollute</code> 等の低レベル touch) は隠蔽されている。アプリケーション側から見ると「インデックス / クエリ / 集約 / インジェスト系は ECH と互換、運用 / 設定系は大部分が消えている」という整理になる。</p>
+<h3 id="本章-102-のまとめ">本章 10.2 のまとめ</h3>
+<p>ECS では cluster / node 設定 API、snapshot API、custom plugin、Watcher、scripted metric aggregations、join field、behavioral analytics などが利用不可で、いずれも Elastic 管理側に集約されるか、ES|QL / Kibana Alerts / Inference API などで置き換えられる。データプレーン API の互換性は維持されているが、運用系 API に依存していたアプリケーションは設計の見直しが必須となる。</p>
+<h2 id="103-推奨インデックスサイズ上限">10.3 推奨インデックスサイズ上限</h2>
+<p>ECS 上の Elasticsearch では、用途別に index の推奨上限サイズが明示されている。これは Search AI Lake のキャッシュレイヤと search node のキャッシュ効率を前提とした、実運用上のサイジングガイドラインである。</p>
+<table>
+<thead>
+<tr>
+<th>用途</th>
+<th>推奨上限サイズ</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Vector search</td>
+<td>150 GB</td>
+</tr>
+<tr>
+<td>General search</td>
+<td>300 GB</td>
+</tr>
+<tr>
+<td>Other uses (ログ・メトリクス等)</td>
+<td>600 GB</td>
+</tr>
+</tbody>
+</table>
+<p>vector search の上限が他より小さいのは、HNSW などの ANN インデックス構造がメモリ常駐前提の評価を行うため、index サイズが大きくなるとキャッシュミスによる random read が頻発し、object storage に対する I/O コストとレイテンシが急増するためである。同様の理由で、general search (フルテキスト検索) より、time-series ログのように seq スキャンが支配的なワークロード (other uses) の方が大きな index でもキャッシュ効率の劣化が緩やかになるため、より大きな上限が許容される。</p>
+<p>これらは「ハード制限」ではなく「推奨上限」であり、超過しても直ちにエラーになるわけではないが、超過時はクエリレイテンシの劣化と Search VCU 消費の増加というかたちで運用コストに跳ね返る。実務上は data stream による自動 rollover や、<code>Search Boost Window</code> の調整で、各 index の active サイズをこのレンジに抑えるよう設計するのが基本となる。Vector search に関しては BBQ (Better Binary Quantization) や ELSER (Elastic Learned Sparse EncodeR) など、ベクトル / スパースエンコーディングの選択でストレージ効率を変えられるため、150 GB の枠に収まるよう量子化戦略を選ぶことも重要なチューニングポイントとなる。</p>
+<h3 id="本章-103-のまとめ">本章 10.3 のまとめ</h3>
+<p>ECS の推奨インデックスサイズは vector search 150GB、general search 300GB、other uses 600GB で、これは search node のキャッシュ効率と object storage I/O コストに基づくガイドラインである。ハード制限ではないが、超過時はレイテンシと VCU コストに直接影響するため、data stream rollover や量子化戦略でこのレンジに収める設計が望ましい。</p>
+<h2 id="104-fleet--elastic-agent-の制限">10.4 Fleet / Elastic Agent の制限</h2>
+<p>Observability / Security Serverless で前提となる Fleet と Elastic Agent についても、ECS 固有の制約が明示されている。Serverless project あたりの Fleet-managed agent 数は最大 20,000、Elastic Agent policy 数は最大 500、Elastic Agent の最小バージョンは 8.11.0 となっている (standalone agent は対象外で上限なし)。Fleet-managed の agent 数上限を超える規模の環境では、複数 project に分割するか、standalone agent と Fleet-managed agent を併用する構成を検討する必要がある。</p>
+<p>Fleet Server については、on-premises 配置の Fleet Server を ECS の Fleet と接続することはサポートされていない。代わりに、Observability および Security の Serverless project にはホスト型 Fleet Server が事前設定されており、これを Elastic Agent の登録先として利用する。Elasticsearch output と Fleet Server host の URL は固定値で、proxy 設定は許容されるが宛先 URL の書き換えは不可となっている。エンタープライズ環境で外部 proxy 経由のトラフィック制御が必要な場合、proxy 側で固定エンドポイントを許可するルールを定義することになる。</p>
+<p>Elastic Agent 自体は ECS のオートアップグレード対象外で、project 側のスタックがアップグレードされても agent は自動更新されない。Fleet UI から各 policy 配下の agent を手動アップグレードするか、CI/CD で API 経由のアップグレードを組む必要がある。Fleet のナビゲーション経路は deployment 形態によって異なり、ECH では Management → Fleet、Serverless Observability では Project settings → Fleet、Serverless Security では Assets → Fleet という配置になっている点も実運用上のハマりどころとなる。</p>
+<h3 id="本章-104-のまとめ">本章 10.4 のまとめ</h3>
+<p>Fleet-managed agent は最大 20,000、policy は 500、最小バージョン 8.11.0 が ECS のハード上限。On-premises Fleet Server は不可で、hosted Fleet Server を利用する。Elasticsearch output と Fleet Server host の URL は固定で、proxy 構成では Elastic 側のホスト名を許可リスト化する。Elastic Agent 自体のアップグレードは手動運用となる。</p>
+<h2 id="105-計画中の機能">10.5 計画中の機能</h2>
+<p>ECS は 2026 年現在も活発に拡張中で、ECH と差分が残る機能の多くがロードマップで「planned / in progress」として明示されている。代表的なものを以下に整理する。</p>
+<table>
+<thead>
+<tr>
+<th>項目</th>
+<th>状態</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>ユーザー主導の Snapshot / Restore</td>
+<td>Planned</td>
+</tr>
+<tr>
+<td>監査ログ (Audit Logging)</td>
+<td>Planned</td>
+</tr>
+<tr>
+<td>BYOK (customer-managed encryption keys)</td>
+<td>Planned</td>
+</tr>
+<tr>
+<td>Azure / GCP の Private Connectivity (Serverless)</td>
+<td>In progress</td>
+</tr>
+<tr>
+<td>ECH からのデータおよび Kibana アセット移行</td>
+<td>In progress</td>
+</tr>
+<tr>
+<td>プロジェクト単位の使用量インサイト・予算アラート</td>
+<td>In progress</td>
+</tr>
+<tr>
+<td>AutoOps の長期レポート機能</td>
+<td>In progress</td>
+</tr>
+<tr>
+<td>Log delivery (コンプライアンス / クエリ最適化)</td>
+<td>In progress</td>
+</tr>
+<tr>
+<td>Cloud region 拡張 (AWS / GCP / Azure)</td>
+<td>In progress</td>
+</tr>
+</tbody>
+</table>
+<p>Snapshot / Restore は ECH では中核機能だが、ECS では object storage が system of record であることと内部の自動災害復旧戦略の存在から、ユーザー API としての提供は計画段階に留まる。同様に、audit logging も deployment 単位の <code>xpack.security.audit</code> ベースの仕組みではなく、ECS 側で再設計された監査基盤として将来提供される予定である。コンプライアンス認証 (PCI-DSS、SOC 2、HIPAA、ISO 27001/27017/27018/27701、CSA Star) はすでに取得済みで、運用統制レベルの整備は進んでいる。</p>
+<p>リージョン面では、2026 年 4 月の更新で Azure Dubai (uaenorth)、AWS Sydney (ap-southeast-2)、AWS Central Canada (ca-central-1) が追加され、Serverless 対応リージョンは継続的に拡張されている。BYOK や Snapshot/Restore など、エンタープライズ調達要件で必須となる機能の GA タイミングは案件の採否に直結するため、Elastic 公式ロードマップ (https://www.elastic.co/cloud/serverless/roadmap) を定期的に確認することが推奨される。</p>
+<h3 id="本章-105-のまとめ">本章 10.5 のまとめ</h3>
+<p>Snapshot/Restore、audit logging、BYOK、Azure / GCP private connectivity、ECH からのデータ移行、プロジェクト単位課金可視化などが planned / in progress としてロードマップに載っている。コンプライアンス認証はすでに整備済みで、リージョン拡張も継続している。BYOK や Snapshot/Restore など調達要件に直結する機能は、Elastic 公式ロードマップで GA 時期を都度確認するのが現実解である。</p>
+<h2 id="参考ドキュメント-9">参考ドキュメント</h2>
+<ul>
+<li>Compare Elastic Cloud Hosted and Serverless: https://www.elastic.co/docs/deploy-manage/deploy/elastic-cloud/differences-from-other-elasticsearch-offerings</li>
+<li>Detailed deployment comparison: https://www.elastic.co/docs/deploy-manage/deploy/deployment-comparison</li>
+<li>Fleet and Elastic Agent Restrictions for Elastic Cloud Serverless: https://www.elastic.co/docs/reference/fleet/fleet-agent-serverless-restrictions</li>
+<li>Project Settings: https://www.elastic.co/docs/deploy-manage/deploy/elastic-cloud/project-settings</li>
+<li>Elastic Cloud Serverless Roadmap: https://www.elastic.co/cloud/serverless/roadmap</li>
+</ul>
+<hr>
+<h1 id="第11章-結論-ecs-の本質的な設計トレードオフ">第11章 結論: ECS の本質的な設計トレードオフ</h1>
+<p>本レポートでは Elastic Cloud Serverless (ECS) の内部アーキテクチャを、stateless 化、Search AI Lake、書き込み / 読み込みパス、課金モデル、セキュリティ、運用監視、機能差分の各観点から見てきた。本章では、ECS の設計が何を解決し何を解決していないかを整理し、ユースケース別の適合判断と、今後の方向性を考察する。</p>
+<h2 id="111-stateless-化が解決したことしなかったこと">11.1 「Stateless 化」が解決したこと/しなかったこと</h2>
+<p>ECS の中核は、Elasticsearch ノードの local disk を system of record から外し、object storage を一次データ層に据えた stateless アーキテクチャである。これにより解決された事項は明確である。第一に、運用負担の大幅な削減である。クラスタの容量計画、shard rebalancing、レプリカ設計、ローリングアップグレード、ノード障害時のリカバリといった「クラスタ運用者の本業」がすべて Elastic 側に集約され、ユーザーは project に対する <code>Search Power</code> と <code>Data Retention</code>、<code>Search Boost Window</code> の設定だけで主要なチューニングを完結できる。第二に、スケール時間の短縮である。レプリカを増やしても物理的なデータコピーが発生しない (object storage 上のデータをキャッシュとして参照するだけで済む) ため、Search VCU の増減は分単位で追随し、ECH のような事前プロビジョニングが不要となる。第三に、容量計画とレプリカコストの構造的な解消である。ストレージは object storage の単価でリニアに課金され、レプリカは「同じデータの物理コピー」ではなく「キャッシュ上のクエリ並列度」として表現されるため、レプリカ数 × shard サイズの掛け算で爆発していた従来のサイジングが消える。</p>
+<p>一方で、stateless 化が解決していない領域も存在する。第一に、単一ドキュメントの indexing latency である。本レポートの第 4 章で述べたとおり、ECS では index 操作は indexing tier 上でいったん受理されたのち translog に相当する WAL を経て object storage へ持続化されるため、ECH のように local NVMe へ直接書く構成と比べると、最終的な可視化までのレイテンシ特性が異なる。Near-real-time 検索の SLA がミリ秒単位で要求されるユースケースでは、設計時のベンチマーク必須となる。第二に、ストレージ API コストへの感度である。GET / PUT / LIST といった object storage 側の API コストは VCU には含まれないが、ワークロード特性によっては無視できない金額となるため、Ingest Rate と Storage Retained だけでなく、検索パターンの granularity も TCO に直結する。第三に、機能互換性の非対称性である。第 10 章で見たように、custom plugin、Watcher、scripted metric aggregations、join field、cluster / node settings API、snapshot API などは利用できず、これらに依存していた既存アプリケーションは設計の見直しが必要となる。</p>
+<p>整理すると、stateless 化は「クラスタ管理」というレイヤを丸ごと消すことに成功した代償として、「local disk を前提とした低レイテンシ最適化」と「低レイヤ API による細かな制御」を手放している。これは ECS の設計思想として明確な選択であり、後述するユースケース適合性の議論に直結する。</p>
+<h3 id="本章-111-のまとめ">本章 11.1 のまとめ</h3>
+<p>ECS の stateless 化は運用負担・スケール時間・容量計画・レプリカコストの 4 軸で大きな改善を実現した。一方、single-document indexing latency、object storage API コスト、低レベル API・プラグインの非互換は構造的に残る課題である。ECS の選択は「クラスタ管理レイヤを消す代わりに、local-disk 最適化と低レイヤ制御を手放す」という明確なトレードオフである。</p>
+<h2 id="112-ユースケース別の適合判定">11.2 ユースケース別の適合判定</h2>
+<p>ECS の適合性は、ワークロード特性と運用組織のリソースによって明確に分かれる。下表は主要な軸での適合判定をまとめたものである。</p>
+<table>
+<thead>
+<tr>
+<th>ユースケース / 要件</th>
+<th>ECS 適合度</th>
+<th>主な理由</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>可変ワークロード (ピークと平常時の差が大きい)</td>
+<td>高</td>
+<td>分単位オートスケールで Search VCU が追随、過剰プロビジョニング不要</td>
+</tr>
+<tr>
+<td>ML / Vector 検索を多用する新規アプリケーション</td>
+<td>高</td>
+<td>ELSER、BBQ、Inference API、ES</td>
+</tr>
+<tr>
+<td>新規プロジェクトでの SIEM / Observability 立ち上げ</td>
+<td>高</td>
+<td>hosted Fleet Server、AutoOps、Search AI Lake が初期構築コストを削減</td>
+</tr>
+<tr>
+<td>運用人員が少ない / SRE が兼務</td>
+<td>高</td>
+<td>クラスタ管理を Elastic 側に集約、AutoOps で課金ドライバまで可視化</td>
+</tr>
+<tr>
+<td>厳密な低 indexing latency 要件 (ミリ秒オーダー保証)</td>
+<td>低</td>
+<td>object storage 経由のため ECH の local NVMe 構成より latency 特性が不利</td>
+</tr>
+<tr>
+<td>Custom plugin 必須 (analyzer、processor 等)</td>
+<td>不適合</td>
+<td>ECS は custom plugin を提供しない</td>
+</tr>
+<tr>
+<td>Snapshot / Restore API への運用依存</td>
+<td>不適合 (現時点)</td>
+<td>ECS では計画中、GA 時期は要確認</td>
+</tr>
+<tr>
+<td>Watcher / scripted metric aggregations / join field 依存</td>
+<td>低</td>
+<td>Kibana Alerts / ES</td>
+</tr>
+<tr>
+<td>Deployment 単位の LDAP / OIDC 認証 realm が必須</td>
+<td>不適合</td>
+<td>ECS は組織レベル SAML SSO のみ</td>
+</tr>
+<tr>
+<td>On-premises Fleet Server 必須環境</td>
+<td>不適合</td>
+<td>hosted Fleet Server のみサポート</td>
+</tr>
+</tbody>
+</table>
+<p>適合性の高いケースの共通項は、「新規アプリケーション」「可変ワークロード」「運用人員が限定的」の 3 要素である。これらが揃う場合、ECS は ECH に対して圧倒的な TCO 優位性を持つ。逆に、不適合とされるケースは、いずれも「ECH 時代の低レベル API・プラグイン・realm 設計に深く依存している」「ハードウェアに密着した latency / IO 特性を前提としている」というパターンに集約される。</p>
+<p>実務的な判断手順としては、(1) 利用予定の Elasticsearch / Kibana API が ECS の対応リストに含まれるかの突合、(2) Vector / general / other の用途別 index サイズ上限 (150GB / 300GB / 600GB) に収まる設計か、(3) Authentication realm 要件が組織 SAML SSO で充足できるか、(4) Snapshot / Audit logging の planned 機能が GA を待てるタイムラインか、の 4 点を順にチェックすることで、適合判定の解像度を高めることができる。</p>
+<h3 id="本章-112-のまとめ">本章 11.2 のまとめ</h3>
+<p>ECS は新規プロジェクト、可変ワークロード、ML / Vector 重視、運用人員が限定的なケースで強い適合を示す。一方、厳密な低 indexing latency、custom plugin、特殊 API・realm 依存、on-premises Fleet Server などが必要なワークロードには不適合となる。API 互換性、index サイズ上限、認証要件、planned 機能の GA 待ち可否の 4 点を順に確認するのが実務的な判定手順である。</p>
+<h2 id="113-今後の展望">11.3 今後の展望</h2>
+<p>ECS のロードマップを俯瞰すると、エンタープライズ採用の障壁となっていた要素が順次解消されつつあることが見て取れる。第一に、リージョン拡大である。2026 年 4 月時点で Azure Dubai、AWS Sydney、AWS Central Canada が追加され、20 以上のリージョンで展開されている。データレジデンシ要件の厳しい欧州 / 中東 / アジア圏での採用が今後加速する見通しである。第二に、Snapshot / Restore の GA 予定である。現状は object storage を system of record とする ECS の内部リカバリ機構に依拠しているが、エンタープライズ調達では「ユーザー主導の世代管理可能な snapshot」が要件化されることが多く、この機能の GA は ECS が ECH と並ぶ enterprise-grade デプロイ選択肢になるための重要なマイルストーンとなる。</p>
+<p>第三に、エコシステム拡張である。Cross-project Search は preview からの進化を経て、organization 内の論理的なデータ統合基盤へと成長することが見込まれる。同時に、Agent Builder、Workflow、AI-powered code completion、natural language to ES|QL、PromQL in ES|QL editor といった上位レイヤの機能群が継続的に追加されており、ECS は「マネージド Elasticsearch」というより「Search AI Lake を基盤とする検索 + 分析 + AI プラットフォーム」へと拡張しつつある。Inference API と各種コネクタ (Snowflake、SharePoint Online、Azure Blob Storage、GitHub、Slack、HubSpot CRM、Outlook など) の充実も、ECS をエンタープライズ統合ハブとして使える地盤を整えている。</p>
+<p>第四に、Stateful Elasticsearch (ECH / Self-managed) との将来関係である。Elastic は ECS と ECH を「異なる利用モデルに最適化された 2 つの選択肢」と位置づけており、近い将来に ECH が廃止される兆候は公式アナウンスにはない。ECU (Elastic Compute Unit) クレジットの ECH / ECS 共通化や、Hosted から Serverless へのデータ・Kibana アセット移行ツール (in progress) が示すように、両者は同一クレジット・同一管理体験のもとで使い分けられる方向に向かっている。長期的には「local-disk 最適化が本質的に必要なワークロードは ECH、それ以外は ECS」というすみ分けが進み、Search AI Lake 由来の機能 (cross-project search、ES|QL LOOKUP JOIN、AutoOps の課金可視化など) が先に ECS に投入されてから ECH にバックポートされる、というリリースパターンが定着しつつあると整理できる。</p>
+<p>総括すると、ECS は「Elasticsearch の運用責任分界点を Elastic 側に大きく寄せた、新しい利用モデル」であり、適合するユースケースでは ECH との比較で運用効率と TCO の両面で大きなメリットを提供する。一方で、ILM / Watcher / custom plugin / 低レベル API などの非互換は本質的なトレードオフであり、移行・新規採用の検討時には本レポートで整理した制限事項と planned 機能の GA タイムラインを踏まえた判断が求められる。Snapshot/Restore、BYOK、Azure / GCP の private connectivity といった調達要件直結の機能群が GA に揃った時点で、ECS はエンタープライズ採用の本格的なフェーズに入ると予想される。</p>
+<h3 id="本章-113-のまとめ">本章 11.3 のまとめ</h3>
+<p>ECS の今後は、リージョン拡大、Snapshot/Restore および BYOK の GA、Cross-project Search や Agent Builder などエコシステムの拡張という 3 軸で進展する見通しである。ECH との関係は「2 つの選択肢」として共存する方向で、新機能はまず ECS に投入されてから ECH に展開される構造が定着しつつある。エンタープライズ採用の本格化は、planned 機能群の GA 完了後と見るのが妥当である。</p>
+<h2 id="参考ドキュメント-10">参考ドキュメント</h2>
+<ul>
+<li>Elastic Cloud Serverless: https://www.elastic.co/docs/deploy-manage/deploy/elastic-cloud/serverless</li>
+<li>Serve more with Elastic Cloud Serverless and Search AI Lake: https://www.elastic.co/cloud/serverless</li>
+<li>Elastic Cloud Serverless Roadmap: https://www.elastic.co/cloud/serverless/roadmap</li>
+<li>Elastic Cloud Serverless Changelog: https://www.elastic.co/docs/release-notes/cloud-serverless</li>
+</ul>
+<hr>
+</main>
+</body>
+</html>

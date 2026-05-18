@@ -71,6 +71,7 @@
   - [Zvec 市場調査レポート](docs/vectordb/zvec.md)
 
 - HTML ページ
+  - [Elastic Cloud Serverless 技術 Deep Dive レポート](htmls/elastic_cloud_serverlss.html ':ignore :target=_blank')
   - [Elastic Cloud vs Azure AI Search / AWS OpenSearch / Google Vertex AI Search — 比較項目定義](htmls/elastic_vs.html ':ignore :target=_blank')
   - [GPU / AI Accelerator Specs](htmls/gpu_specs.html ':ignore :target=_blank')
 
