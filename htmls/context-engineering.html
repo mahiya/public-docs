@@ -1,0 +1,621 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Context Engineering 総合レポート &mdash; Anthropic / OpenAI / Google / Elastic</title>
+<style>
+:root{
+  --bg:#0d1117;--bg2:#161b22;--bg3:#1c2128;--border:#30363d;
+  --text:#e6edf3;--muted:#9da7b3;--teal:#22d3a8;--teal-soft:rgba(34,211,168,.13);
+  --accent:#f04e98;--accent-soft:rgba(240,78,152,.14);
+  --a:#d98b5f;--o:#19c39c;--g:#5b9dff;--e:#f04e98;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Noto Sans JP",sans-serif;background:var(--bg);color:var(--text);line-height:1.8;font-size:16px;-webkit-font-smoothing:antialiased}
+.wrap{max-width:1000px;margin:0 auto;padding:0 24px}
+
+/* nav */
+header.site{position:sticky;top:0;background:rgba(13,17,23,.88);backdrop-filter:blur(10px);border-bottom:1px solid var(--border);z-index:30}
+nav.site{max-width:1000px;margin:0 auto;display:flex;gap:6px;flex-wrap:wrap;padding:11px 24px;align-items:center}
+nav.site .brand{font-weight:700;font-size:13px;color:var(--muted);margin-right:auto;letter-spacing:.04em}
+nav.site a{color:var(--muted);text-decoration:none;font-size:13px;padding:6px 13px;border-radius:999px;border:1px solid transparent;transition:.15s}
+nav.site a:hover{color:var(--text);border-color:var(--border)}
+nav.site a.cta{color:#2a0617;background:var(--accent);border-color:var(--accent);font-weight:600}
+
+/* section accents */
+.sec{scroll-margin-top:70px}
+.sec-anthropic{--accent:var(--a);--accent-soft:rgba(217,139,95,.14)}
+.sec-openai{--accent:var(--o);--accent-soft:rgba(25,195,156,.14)}
+.sec-google{--accent:var(--g);--accent-soft:rgba(91,157,255,.14)}
+.sec-elastic{--accent:var(--e);--accent-soft:rgba(240,78,152,.14)}
+.sec-synth{--accent:var(--e);--accent-soft:rgba(240,78,152,.13)}
+
+/* dividers */
+.divider{border-top:1px solid var(--border);margin:0}
+.sechead{padding:64px 0 6px}
+.sechead .eyebrow{display:inline-block;font-size:12px;letter-spacing:.18em;text-transform:uppercase;color:var(--accent);font-weight:700;margin-bottom:14px}
+.sechead h2.title{font-size:38px;line-height:1.18;margin:0 0 16px;font-weight:820;letter-spacing:-.02em}
+.sechead .lede{font-size:17px;color:var(--muted);max-width:800px;margin:0}
+.sechead .lede strong{color:var(--text)}
+.sechead .src{margin-top:18px;font-size:13px;color:var(--muted)}
+.sechead .src a{color:var(--accent);text-decoration:none}
+
+/* hero */
+.hero{padding:90px 0 50px;background:radial-gradient(900px 360px at 80% -50%,rgba(240,78,152,.18),transparent),radial-gradient(720px 320px at 8% -30%,rgba(34,211,168,.12),transparent)}
+.hero .eyebrow{display:inline-block;font-size:12px;letter-spacing:.2em;text-transform:uppercase;color:var(--accent);font-weight:700;margin-bottom:18px}
+.hero h1{font-size:52px;line-height:1.1;margin:0 0 20px;font-weight:850;letter-spacing:-.03em}
+.hero .lede{font-size:18px;color:var(--muted);max-width:800px;margin:0}
+.hero .lede strong{color:var(--text)}
+.toc{display:flex;flex-wrap:wrap;gap:8px;margin:30px 0 0}
+.toc a{font-size:13px;color:var(--muted);text-decoration:none;border:1px solid var(--border);border-radius:8px;padding:7px 13px;transition:.15s;font-weight:600}
+.toc a:hover{color:#fff;border-color:var(--accent);background:var(--accent-soft)}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:12.5px;color:var(--muted);margin:22px 0 0}
+
+h3{font-size:25px;margin:50px 0 8px;font-weight:760;letter-spacing:-.01em}
+h3 .num{color:var(--accent);font-size:17px;font-weight:700;margin-right:9px}
+h4{font-size:19px;margin:34px 0 6px;font-weight:700;color:#fff}
+p{margin:14px 0}
+.sub{color:var(--muted)}
+.card{background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:22px 26px;margin:22px 0}
+.callout{background:var(--accent-soft);border:1px solid var(--accent);border-radius:14px;padding:20px 24px;margin:26px 0}
+.callout .label{font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--accent);font-weight:700;margin-bottom:6px}
+.callout p{margin:6px 0 0;font-size:16px}
+.callout.teal{background:var(--teal-soft);border-color:var(--teal)}
+.callout.teal .label{color:var(--teal)}
+ul,ol{margin:14px 0;padding-left:22px}
+li{margin:8px 0}
+li strong{color:#fff}
+blockquote{border-left:3px solid var(--accent);margin:22px 0;padding:4px 0 4px 20px;color:var(--muted);font-style:italic}
+code{background:var(--bg3);border:1px solid var(--border);border-radius:5px;padding:1px 6px;font-size:13px;color:#e2b8d4}
+table{width:100%;border-collapse:collapse;margin:22px 0;font-size:14px}
+th,td{border:1px solid var(--border);padding:10px 13px;text-align:left;vertical-align:top}
+th{background:var(--bg3);color:#fff;font-weight:700}
+td:first-child{color:#fff;font-weight:600}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:16px;margin:24px 0}
+.tile{background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:20px 22px}
+.tile h5{margin:0 0 8px;font-size:16px;color:#fff;display:flex;align-items:center;gap:8px;font-weight:700}
+.tile .ic{width:30px;height:30px;border-radius:8px;background:var(--accent-soft);color:var(--accent);display:grid;place-items:center;font-size:15px;flex:none}
+.tile p{margin:0;font-size:14.5px;color:var(--muted)}
+.tile .lvl{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--accent);font-weight:700;display:block;margin-bottom:4px}
+.flow,.pipe{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:24px 0}
+.flow .step,.pipe .step{background:var(--bg2);border:1px solid var(--accent);border-radius:10px;padding:10px 16px;font-weight:600;color:#fff;font-size:14.5px}
+.flow .arr,.pipe .arr{color:var(--accent);font-size:20px;font-weight:700}
+.stat{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:14px;margin:22px 0}
+.stat .s{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:18px 20px}
+.stat .n{font-size:26px;font-weight:800;color:var(--accent);line-height:1.1}
+.stat .l{font-size:13px;color:var(--muted);margin-top:6px}
+
+/* synthesis specials */
+.bigdef{background:linear-gradient(135deg,rgba(240,78,152,.14),rgba(34,211,168,.10));border:1px solid var(--accent);border-radius:18px;padding:30px 34px;margin:30px 0}
+.bigdef .label{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);font-weight:800;margin-bottom:10px}
+.bigdef p{font-size:21px;line-height:1.65;margin:0;color:#fff;font-weight:500}
+.bigdef .note{font-size:14.5px;color:var(--muted);margin-top:16px;font-weight:400;line-height:1.7}
+.vendor{display:inline-block;font-size:11px;font-weight:700;border-radius:5px;padding:1px 7px;margin-right:5px;letter-spacing:.02em}
+.va{background:rgba(217,139,95,.18);color:var(--a)}
+.vo{background:rgba(25,195,156,.18);color:var(--o)}
+.vg{background:rgba(91,157,255,.18);color:var(--g)}
+.ve{background:rgba(240,78,152,.18);color:var(--e)}
+.elem{background:var(--bg2);border:1px solid var(--border);border-radius:16px;padding:6px 28px 26px;margin:26px 0}
+.elem .ehead{display:flex;align-items:center;gap:14px;margin:22px 0 4px;padding-bottom:16px;border-bottom:1px solid var(--border)}
+.elem .enum{width:44px;height:44px;flex:none;border-radius:12px;background:var(--accent-soft);color:var(--accent);display:grid;place-items:center;font-size:20px;font-weight:800}
+.elem .etitle{font-size:21px;font-weight:750;color:#fff}
+.elem .esub{font-size:13px;color:var(--muted);margin-top:1px}
+.dp{margin:18px 0 8px;font-size:13px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--teal)}
+.eladv{background:linear-gradient(135deg,rgba(240,78,152,.1),rgba(34,211,168,.08));border:1px solid var(--border);border-radius:16px;padding:8px 26px 24px;margin:24px 0}
+
+.foot{margin:70px 0 0;padding:28px 0 90px;border-top:1px solid var(--border);color:var(--muted);font-size:13px}
+.foot a{color:var(--accent);text-decoration:none}
+.totop{display:inline-block;margin-top:14px;font-size:13px;color:var(--accent);text-decoration:none}
+@media(max-width:560px){.hero h1{font-size:38px}.sechead h2.title{font-size:30px}}
+</style>
+</head>
+<body id="top">
+<header class="site">
+  <nav class="site">
+    <span class="brand">CONTEXT ENGINEERING</span>
+    <a href="#anthropic">Anthropic</a>
+    <a href="#openai">OpenAI</a>
+    <a href="#google">Google</a>
+    <a href="#elastic">Elastic</a>
+    <a href="#synthesis" class="cta">統合まとめ</a>
+  </nav>
+</header>
+
+<!-- ===================== HERO ===================== -->
+<div class="wrap">
+  <div class="hero">
+    <span class="eyebrow">Research Report &mdash; 単一ファイル統合版</span>
+    <h1>Context Engineering<br>4社の主張と統合</h1>
+    <p class="lede">Anthropic・OpenAI・Google・Elastic が提唱する <strong>Context Engineering</strong> を各社視点でまとめ、最後に<strong>1つの定義・要素・各要素の詳細な設計ポイント</strong>へ統合する（Elastic 視点）。収集済み資料のみを根拠とし、外部検索は不使用。</p>
+    <div class="legend">
+      <span><span class="vendor va">A</span>Anthropic</span>
+      <span><span class="vendor vo">O</span>OpenAI</span>
+      <span><span class="vendor vg">G</span>Google</span>
+      <span><span class="vendor ve">E</span>Elastic</span>
+    </div>
+    <div class="toc">
+      <a href="#anthropic">01 Anthropic</a>
+      <a href="#openai">02 OpenAI</a>
+      <a href="#google">03 Google</a>
+      <a href="#elastic">04 Elastic</a>
+      <a href="#synthesis">05 統合まとめ（Elastic視点）</a>
+    </div>
+  </div>
+</div>
+<div class="wrap"><hr class="divider"></div>
+
+<!-- ===================== ANTHROPIC ===================== -->
+<section class="sec sec-anthropic" id="anthropic">
+<div class="wrap">
+  <div class="sechead">
+    <span class="eyebrow">Vendor View &mdash; 01</span>
+    <h2 class="title">Anthropic の Context Engineering</h2>
+    <p class="lede">「有限のアテンション予算をどう使い切るか」。Anthropic はコンテキストを枯渇する資源として捉え、<strong>最小で最高シグナルのトークン集合</strong>を見つけることを設計の中心原理に据える。理論・原典寄りの視点。</p>
+    <p class="src">出典: effective-context-engineering-for-ai-agents.md（Engineering at Anthropic, 2025-09-29）／ tool-use-context-engineering-context-engineering-tools.md（Claude Developer Platform Cookbook）</p>
+  </div>
+
+  <h3><span class="num">01</span>定義</h3>
+  <p>Anthropic は context engineering を<strong>プロンプトエンジニアリングの自然な発展形</strong>と位置づける。プロンプトが「最適な言葉の選び方」だったのに対し、context engineering は「どんなコンテキストの構成が望ましい挙動を生む可能性が最も高いか」という、より広い問いに答える営みである。</p>
+  <div class="callout">
+    <div class="label">Definition</div>
+    <p>Context engineering とは、<strong>LLM の推論中に最適なトークン（情報）の集合をキュレーションし維持するための戦略群</strong>である。「コンテキスト」とは LLM からサンプリングする際に含まれる全トークンを指し、システム指示・ツール・MCP・外部データ・メッセージ履歴など、プロンプト以外に紛れ込むすべてを含む。</p>
+  </div>
+  <p>プロンプト作成が一度きりの離散的タスクであるのに対し、context engineering は<strong>反復的</strong>であり、「モデルに何を渡すか」を決めるキュレーション工程が推論のたびに発生する。ループで動くエージェントは絶えず新たな情報を生み出すため、その膨大な候補から限られた窓に入れるものを選び続ける必要がある。</p>
+
+  <h3><span class="num">02</span>なぜ重要か &mdash; 有限なアテンション予算</h3>
+  <p>LLM は人間と同様、ある点を超えると焦点を失う。トークン数が増えるほど正確な想起が困難になる現象 &mdash; <strong>コンテキストロット（context rot）</strong> &mdash; がすべてのモデルで観測される。</p>
+  <ul>
+    <li><strong>アテンション予算</strong>：Transformer は全トークンが互いに注意を向け合うため、n トークンで n&sup2; の関係が生じる。コンテキストサイズとアテンションの焦点はトレードオフ。</li>
+    <li><strong>訓練分布の偏り</strong>：短い系列のほうが学習データに多く、長距離依存への経験とパラメータが相対的に乏しい。</li>
+    <li>結果として「崖」ではなく<strong>性能の勾配（gradient）</strong>が生じる。長文でも有能だが検索精度と長距離推論は落ちる。</li>
+  </ul>
+  <blockquote>良いコンテキストエンジニアリングとは、望ましい結果の確率を最大化する「<strong>最小で最高シグナルなトークン集合</strong>」を見つけること。</blockquote>
+
+  <h3><span class="num">03</span>効果的なコンテキストの解剖学</h3>
+  <div class="grid">
+    <div class="tile"><h5><span class="ic">◎</span>システムプロンプト</h5><p>「ちょうど良い高度（right altitude）」で書く。脆い if-else と曖昧な一般論の間。XML タグや Markdown 見出しでセクション化し、挙動を完全に示す最小限の情報を狙う（最小＝短いとは限らない）。</p></div>
+    <div class="tile"><h5><span class="ic">⚙</span>ツール</h5><p>エージェントと情報・行動空間の契約。トークン効率の良い結果を返す。機能の重複がなく自己完結し用途が明確に。肥大したツール群は最大の失敗モード。</p></div>
+    <div class="tile"><h5><span class="ic">✎</span>例（few-shot）</h5><p>エッジケースを羅列せず、期待挙動を的確に描く<strong>多様で正典的な例</strong>を厳選。例は「千の言葉に値する絵」。</p></div>
+    <div class="tile"><h5><span class="ic">↻</span>メッセージ履歴</h5><p>全体を「情報豊かでありながら引き締まった（informative, yet tight）」状態に保つ。</p></div>
+  </div>
+
+  <h3><span class="num">04</span>コンテキストの取得 &mdash; Just-in-time とエージェント検索</h3>
+  <ul>
+    <li><strong>軽量な識別子を保持</strong>：ファイルパス・保存クエリ・Web リンク等の参照だけ持ち、実行時にツールで動的ロード。Claude Code は <code>head</code>/<code>tail</code>・<code>glob</code>/<code>grep</code> で全ロードせず分析。</li>
+    <li><strong>メタデータが挙動を導く</strong>：フォルダ階層・命名規約・タイムスタンプがシグナルに。</li>
+    <li><strong>漸進的開示</strong>：探索で段階的にコンテキストを発見し、作業記憶には必要なものだけ。</li>
+    <li><strong>ハイブリッド戦略</strong>：速度のため一部前取得しつつ裁量で自律探索。<code>CLAUDE.md</code> 前ロード＋JIT。法務・金融など動的でない領域は事前取得寄り。</li>
+  </ul>
+  <blockquote>"do the simplest thing that works"。モデルが賢くなるほど人手のキュレーションは減る。</blockquote>
+
+  <h3><span class="num">05</span>長期ホライズンタスクの技法</h3>
+  <div class="grid">
+    <div class="tile"><h5><span class="ic">⊟</span>Compaction</h5><p>上限に近づいた会話を要約し新窓を再起動。決定・未解決バグ・実装詳細を保ち冗長なツール出力を捨てる。まず recall 最大化→precision 向上。</p></div>
+    <div class="tile"><h5><span class="ic">▤</span>Structured note-taking</h5><p>窓外の永続ストレージにメモを書き後で引き戻す。<code>NOTES.md</code>・TODO。Pokémon プレイ例で数千ステップの目標・地図・戦略を維持。</p></div>
+    <div class="tile"><h5><span class="ic">⫶</span>Sub-agent architectures</h5><p>クリーンな窓を持つ専門サブエージェント。数万トークン探索しても返すのは1,000〜2,000トークンの蒸留サマリのみ。複雑リサーチで単一を上回る。</p></div>
+  </div>
+
+  <h3><span class="num">06</span>3つのプリミティブ（Cookbook の実装視点）</h3>
+  <table>
+    <thead><tr><th>プリミティブ</th><th>作用対象</th><th>失うもの</th><th>解決する問題</th></tr></thead>
+    <tbody>
+      <tr><td>Compaction</td><td>現窓の会話全体</td><td>逐語の詳細（細部は欠落しうる）</td><td>セッション内の全成長</td></tr>
+      <tr><td>Tool-result clearing</td><td>現窓のツール結果</td><td>古いツール結果（必要なら再取得）</td><td>ツール結果の肥大</td></tr>
+      <tr><td>Memory</td><td>窓外の外部ストレージ</td><td>呼び出しオーバーヘッド／保存判断の質次第</td><td>セッション横断の永続化</td></tr>
+    </tbody>
+  </table>
+  <div class="callout">
+    <div class="label">Key takeaway</div>
+    <p>問うべきは「3つ全部使うべきか？」ではなく「<strong>自分のワークロードが3つの問題のうちどれを実際に抱えているか？</strong>」。ロス性はバイナリではなくスペクトラム。</p>
+  </div>
+  <a class="totop" href="#top">↑ トップへ</a>
+</div>
+</section>
+<div class="wrap"><hr class="divider"></div>
+
+<!-- ===================== OPENAI ===================== -->
+<section class="sec sec-openai" id="openai">
+<div class="wrap">
+  <div class="sechead">
+    <span class="eyebrow">Vendor View &mdash; 02</span>
+    <h2 class="title">OpenAI の Context Engineering</h2>
+    <p class="lede">理論よりも<strong>実装パターン</strong>。Agents SDK の <code>Session</code> を使い、短期記憶（trimming / summarization）と長期記憶（state ベースのパーソナライズ）をどう作り、どう評価するかを具体的なコードで示す。合言葉は「<strong>evals is all you need</strong>」。</p>
+    <p class="src">出典: session_memory.md（Short-Term Memory Management with Sessions）／ context_personalization.md（Long-Term Memory Notes）（developers.openai.com cookbook）</p>
+  </div>
+
+  <h3><span class="num">01</span>定義</h3>
+  <div class="callout">
+    <div class="label">Definition</div>
+    <p>Context engineering の核心は<strong>「ある瞬間にモデルが何を知っているかを形作ること」</strong>。何を保存し（store）、何を呼び戻し（recall）、何を作業記憶に注入する（inject）かを管理し、パーソナルで一貫性ある文脈理解エージェントを作る。</p>
+  </div>
+  <p>「コンテキスト」はモデルが一度に注意できる入出力トークンの窓（GPT-5 で入力 272k／出力 128k）。大きな窓でも未整理の履歴・冗長なツール結果・ノイズの多い検索で溢れる。コンテキスト管理は最適化ではなく<strong>必須事項</strong>。「応答する」から「記憶する」への飛躍が新フロンティア。</p>
+
+  <h3><span class="num">02</span>なぜ重要か</h3>
+  <ul>
+    <li><strong>長スレッドでの一貫性維持</strong>：「昨日の計画」が「今日の依頼」を上書きしない。</li>
+    <li><strong>ツール呼び出し精度の向上</strong>：焦点の合った文脈が関数選択・引数充填を改善。</li>
+    <li><strong>レイテンシ・コストの低減</strong>。</li>
+    <li><strong>エラー／ハルシネーション封じ込め</strong>：要約は「クリーンルーム」、trimming は <em>context poisoning</em> を回避。</li>
+    <li><strong>デバッグ・可観測性</strong>：安定サマリと境界明確な履歴でログを比較可能に。</li>
+  </ul>
+
+  <h3><span class="num">03</span>短期記憶：Trimming と Summarization</h3>
+  <div class="grid">
+    <div class="tile"><h5><span class="ic">✂</span>Context Trimming</h5><p>直近 N ターンだけ保持（<code>TrimmingSession</code>, <code>max_turns</code>）。決定論的・追加レイテンシゼロ・逐語保持だが、長距離の制約や ID は N を過ぎると突然消え「健忘」に見える。</p></div>
+    <div class="tile"><h5><span class="ic">⊟</span>Context Summarization</h5><p>直近 N ターンは逐語で残し古い履歴を構造化サマリに圧縮（<code>SummarizingSession</code>）。長距離をコンパクトに保つが、要約ロス・遅延・<em>poisoning</em> リスク。</p></div>
+  </div>
+  <table>
+    <thead><tr><th>観点</th><th>Trimming</th><th>Summarizing</th></tr></thead>
+    <tbody>
+      <tr><td>レイテンシ／コスト</td><td>最小</td><td>サマリ更新時に上昇</td></tr>
+      <tr><td>長距離の想起</td><td>弱い（ハードカットオフ）</td><td>強い（繰り越し）</td></tr>
+      <tr><td>リスク種別</td><td>コンテキスト喪失</td><td>歪み／poisoning</td></tr>
+      <tr><td>向く用途</td><td>ツール多用・短いワークフロー</td><td>アナリスト／長スレッド</td></tr>
+    </tbody>
+  </table>
+  <p class="sub"><strong>サマリプロンプト設計</strong>：マイルストーン／用途特化／矛盾チェック／タイムスタンプと時系列／チャンク化／ツール性能の知見／例示／ハルシネーション抑制（不確実は <code>UNVERIFIED</code>）。「次の担当者への引き継ぎ」の感覚で書く。</p>
+
+  <h3><span class="num">04</span>長期記憶：State ベースのパーソナライズ</h3>
+  <div class="grid">
+    <div class="tile"><h5><span class="ic">▦</span>構造化メモリ</h5><p>スキーマ駆動・機械強制可能。顧客ID・パスポート期限・ロイヤルティ・座席選好・保険プロファイル等。ロジック／予約 API に直接使える。</p></div>
+    <div class="tile"><h5><span class="ic">≈</span>非構造化メモリ</h5><p>ナラティブ・意味的。「通路側を好む」等。推論・パーソナライズに最適化。</p></div>
+  </div>
+  <p class="sub"><strong>スコープ分離</strong>：耐久的選好は Global、今回限りは Session（staging）。設計指針は「同じ仕事を人間がやるなら作業記憶に何を保持するか？」。</p>
+  <div class="flow">
+    <span class="step">Inject 注入</span><span class="arr">→</span>
+    <span class="step">Reason 推論</span><span class="arr">→</span>
+    <span class="step">Distill 蒸留</span><span class="arr">→</span>
+    <span class="step">Consolidate 統合</span>
+  </div>
+  <ul>
+    <li><strong>Injection</strong>：構造化を YAML フロントマター、非構造化を Markdown で system prompt へ。<code>&lt;memory_policy&gt;</code> で扱いを指示。</li>
+    <li><strong>Distillation</strong>：会話中に <code>save_memory_note</code> で候補メモ捕捉（memory-as-a-tool）。耐久的・行動可能・明示的なものだけ。</li>
+    <li><strong>Consolidation</strong>：終了時に session→global 昇格。最もデリケート。重複排除・矛盾解消（recency wins）・<strong>忘却</strong>を明示的に。忘却は必須。</li>
+  </ul>
+  <div class="card">
+    <strong style="color:#fff">優先順位ルール</strong>
+    <ol style="margin:10px 0 0;padding-left:20px">
+      <li>現在の対話の<strong>ユーザー最新指示が最優先</strong>。</li>
+      <li>構造化プロファイルキーは信頼。</li>
+      <li>Global メモリは助言的で現在の指示を上書きしない。</li>
+      <li>Session メモリは今回限り Global を上書き。</li>
+      <li>衝突時は明確化の質問を1つだけ。</li>
+    </ol>
+  </div>
+
+  <h3><span class="num">05</span>セキュリティ：記憶は高価値の攻撃面</h3>
+  <p>脅威は <strong>context poisoning</strong>・<strong>instruction injection</strong>・<strong>over-influence</strong>。</p>
+  <table>
+    <thead><tr><th>段階</th><th>ガードレール</th></tr></thead>
+    <tbody>
+      <tr><td>Distillation</td><td>機微パターン拒否、指示型ペイロード拒否、ツールスキーマを承認フィールドに限定</td></tr>
+      <tr><td>Consolidation</td><td>no invention、recency wins、意味的重複排除、TTL 減衰</td></tr>
+      <tr><td>Injection</td><td>明示デリミタ、優先順位（現在の発話 &gt; session &gt; memory）、recency 重み付け、advisory 扱い</td></tr>
+    </tbody>
+  </table>
+  <blockquote>記憶が挙動を変えうるなら、capture・consolidation・injection の各時点で安全チェックを通過しなければならない。</blockquote>
+
+  <h3><span class="num">06</span>評価 &mdash; evals is all you need</h3>
+  <p>メモリは強い<strong>時間依存</strong>を持ち、<strong>オーケストレーションパイプライン</strong>なので distillation・consolidation・injection をエンドツーエンドで評価。指標：<code>memory_write_rate</code>・<code>blocked_write_rate</code>・<code>memory_conflict_rate</code>・<code>time_to_personalization</code>。</p>
+  <div class="callout">
+    <div class="label">Philosophy</div>
+    <p>ゼロショットから始め、eval ハーネスで実失敗を集め、必要なら小さな「memory specialist」へ fine-tune。記憶システムは<strong>計測された反復</strong>で良くなる。</p>
+  </div>
+  <a class="totop" href="#top">↑ トップへ</a>
+</div>
+</section>
+<div class="wrap"><hr class="divider"></div>
+
+<!-- ===================== GOOGLE ===================== -->
+<section class="sec sec-google" id="google">
+<div class="wrap">
+  <div class="sechead">
+    <span class="eyebrow">Vendor View &mdash; 03</span>
+    <h2 class="title">Google の Context Engineering</h2>
+    <p class="lede">Google は context engineering を<strong>「AI にとっての意味のアーキテクチャ」</strong>と表現し、Google Cloud のインフラ（Vertex AI / BigQuery / Agent Platform）と Gemini Embedding に紐付けて語る。インフラ・基盤寄りの視点。</p>
+    <p class="src">出典: ai-context-engineering.md（cloud.google.com, 2026-04-23）／ gemini-embedding-powering-rag-context-engineering.md（developers.googleblog.com, 2025-07-30）</p>
+  </div>
+
+  <h3><span class="num">01</span>定義</h3>
+  <div class="callout">
+    <div class="label">Definition</div>
+    <p>Context engineering は<strong>「AI にとっての意味のアーキテクチャ」</strong>。単発の付箋を渡すのではなく、ラベル付きキャビネット（BigQuery）・ライブ接続（Agent Platform）・明確なルールを備えた「ハイテクな作業場」を用意し、AI が当て推量せず<strong>データ駆動の現実</strong>で動くようにする。</p>
+  </div>
+  <table>
+    <thead><tr><th>観点</th><th>レガシーなプロンプト</th><th>モダンな context engineering</th></tr></thead>
+    <tbody>
+      <tr><td>焦点</td><td>語の選択・言い回し</td><td>データパイプラインと環境状態</td></tr>
+      <tr><td>手法</td><td>手作業の試行錯誤</td><td>Vertex AI による自動検索</td></tr>
+      <tr><td>入力種別</td><td>静的テキスト</td><td>ライブ BigQuery ストリーム・マルチモーダル</td></tr>
+      <tr><td>スケーラビリティ</td><td>再現困難</td><td>Google Cloud に内蔵</td></tr>
+    </tbody>
+  </table>
+
+  <h3><span class="num">02</span>コンテキストの3層モデル</h3>
+  <div class="grid">
+    <div class="tile"><h5><span class="ic">▣</span>Persistent</h5><span class="lvl">永続層</span><p>システム指示。AI の世界の「物理法則」。役割・トーン・許可／禁止。全インタラクションで有効。</p></div>
+    <div class="tile"><h5><span class="ic">◐</span>Semi-persistent</h5><span class="lvl">半永続層</span><p>メモリ。会話履歴とユーザー選好を追跡し、繰り返させない。</p></div>
+    <div class="tile"><h5><span class="ic">⚡</span>Transient</h5><span class="lvl">一時層</span><p>動的データ。Agent Search の文書・ライブ API・思考用メモ。リクエスト毎に変わる。</p></div>
+  </div>
+
+  <h3><span class="num">03</span>2M トークン経済と Context Caching</h3>
+  <div class="stat">
+    <div class="s"><div class="n">1M–2M</div><div class="l">Gemini 3.1 のコンテキスト窓（トークン）</div></div>
+    <div class="s"><div class="n">90%</div><div class="l">Context Caching によるトークンコスト削減</div></div>
+  </div>
+  <p>トークンは LLM の「RAM」。巨大窓でコードベース全体・1時間動画・数千行の BigQuery を一度に渡せる。Context Caching は背景データを 90% 割引でアクティブメモリに保持し、都度送信を不要にする。</p>
+  <blockquote>巨大窓は「埋めれば性能が上がる」わけではないとする Anthropic / Elastic とは対照的に、Google はインフラ（巨大窓＋キャッシュ）で<strong>枠を広げて経済性を変える</strong>方向を前面に出す。</blockquote>
+
+  <h3><span class="num">04</span>Embedding を context engineering の基盤に</h3>
+  <p>Gemini Embedding は文書・会話履歴・<strong>ツール定義</strong>を効率よく特定し作業記憶へ統合する中核部品。</p>
+  <table>
+    <thead><tr><th>組織</th><th>用途</th><th>成果（開発者報告値）</th></tr></thead>
+    <tbody>
+      <tr><td>Box</td><td>複雑文書の Q&amp;A・洞察抽出</td><td>正答率 81% 超、recall +3.6%</td></tr>
+      <tr><td>re:cap</td><td>B2B 銀行取引分類（21,500件）</td><td>F1 を 1.9% / 1.45% 改善</td></tr>
+      <tr><td>Everlaw</td><td>法務ディスカバリ（140万文書）</td><td>87% 精度（Voyage 84%・OpenAI 73% 超）</td></tr>
+      <tr><td>Roo Code</td><td>コードベース索引・意味検索</td><td>Tree-sitter 併用で意図ベース検索改善</td></tr>
+      <tr><td>Mindlid</td><td>会話履歴の理解</td><td>中央値 420ms、top-3 recall 82%（+4%）</td></tr>
+      <tr><td>Poke</td><td>記憶検索・関連メール特定</td><td>埋め込み時間を平均 90.4% 短縮</td></tr>
+    </tbody>
+  </table>
+  <p class="sub"><strong>Matryoshka 表現</strong>でコンパクトな埋め込みを使い、性能ロス最小でストレージ・検索効率を改善できる点を強調。</p>
+  <div class="callout">
+    <div class="label">Key takeaway</div>
+    <p>主張は明快に<strong>インフラ中心</strong>。「AI が自律化するほど有効性は<strong>与えるコンテキストの質</strong>で決まる」。高性能 embedding は次世代エージェントの<strong>基盤的コンポーネント</strong>。</p>
+  </div>
+  <a class="totop" href="#top">↑ トップへ</a>
+</div>
+</section>
+<div class="wrap"><hr class="divider"></div>
+
+<!-- ===================== ELASTIC ===================== -->
+<section class="sec sec-elastic" id="elastic">
+<div class="wrap">
+  <div class="sechead">
+    <span class="eyebrow">Vendor View &mdash; 04</span>
+    <h2 class="title">Elastic の Context Engineering</h2>
+    <p class="lede">Elastic は context engineering を<strong>「適切な情報を適切なタイミングで AI に与える実践」</strong>と定義し、その全構成要素を <strong>1つのプラットフォーム（Elasticsearch ＋ Agent Builder）</strong>に集約できると主張する。製品・実装側の視点。</p>
+    <p class="src">出典: elastic/01〜04（context-engineering-overview / vs-prompt-engineering / what-is-context-engineering / context-engineering-for-ai-agents）（elastic.co Search Labs ほか）</p>
+  </div>
+
+  <h3><span class="num">01</span>定義</h3>
+  <div class="callout">
+    <div class="label">Definition</div>
+    <p>Context engineering は<strong>「適切な情報を適切なタイミングで与える実践」</strong>。新しい同僚へのブリーフィングのように、全社文書を積むのではなく具体的タスクに最も関連する情報を選んで渡す。モデルを取り巻く<strong>情報エコシステム全体を設計</strong>する。</p>
+  </div>
+  <p>ソフトウェア工学の原則から着想。DB・API・パイプラインを設計するように、知的エージェントを支える<strong>情報アーキテクチャ</strong>を設計する。プロンプトエンジニアリングはその<strong>部分集合</strong>。</p>
+  <table>
+    <thead><tr><th>観点</th><th>プロンプトエンジニアリング</th><th>コンテキストエンジニアリング</th></tr></thead>
+    <tbody>
+      <tr><td>中心の問い</td><td>「どう言い回すか？」</td><td>「モデルは何を知る必要があるか？」</td></tr>
+      <tr><td>スコープ</td><td>単一クエリ</td><td>システム全体の情報フロー</td></tr>
+      <tr><td>失敗モード</td><td>曖昧さ（誤解釈）</td><td>検索の問題（誤文書・陳腐化・溢れ）</td></tr>
+      <tr><td>デバッグ手法</td><td>言語的精度</td><td>データアーキテクチャ（検索調整・剪定・順序）</td></tr>
+    </tbody>
+  </table>
+
+  <h3><span class="num">02</span>コンテキストの構成要素（5〜6要素）</h3>
+  <div class="grid">
+    <div class="tile"><h5><span class="ic">◎</span>System prompt</h5><p>タスク種別・ガードレール・期待結果を示す主指示。エージェントの「人格」と規則書。</p></div>
+    <div class="tile"><h5><span class="ic">▷</span>User prompt</h5><p>directive・exemplars・output formatting・style・role・additional information から成る。</p></div>
+    <div class="tile"><h5><span class="ic">⌕</span>RAG</h5><p>Elasticsearch 等から取得したデータで出力をグラウンディングし強化。</p></div>
+    <div class="tile"><h5><span class="ic">▤</span>Memory</h5><p>短期（state/history）と長期（セッション横断）。意味検索で過去メモリを引き戻す。</p></div>
+    <div class="tile"><h5><span class="ic">⚙</span>Tools</h5><p>description・型付きparameters・実行関数・（任意）output schema。</p></div>
+    <div class="tile"><h5><span class="ic">{}</span>Structured outputs</h5><p>JSON 等のスキーマ準拠出力。下流との「契約」。</p></div>
+  </div>
+
+  <h3><span class="num">03</span>検索の作り込み &mdash; Elastic の本領</h3>
+  <p>「窓が広がったから RAG は死んだ」に対し、余剰情報がもたらす <strong>context confusion</strong> を理由に反論。</p>
+  <div class="grid">
+    <div class="tile"><h5><span class="ic">⧉</span>Semantic chunking</h5><p>固定長で切らず段落・関数・論理セクション単位でまとめ、周辺も含める。</p></div>
+    <div class="tile"><h5><span class="ic">⚖</span>Hybrid search</h5><p>ベクトル（概念類似）＋ BM25（厳密一致 <code>SKU-123AB</code>）を1クエリで統合。標準提供。</p></div>
+    <div class="tile"><h5><span class="ic">↑</span>Reranking</h5><p>上位100件を高速取得→高精度リランカーで再スコア。lost-in-the-middle を緩和。</p></div>
+  </div>
+
+  <h3><span class="num">04</span>ツールのオーケストレーションと選択</h3>
+  <p>100ツールのエージェントは窓の 30〜40% を説明に費やしうる。簡潔・曖昧さなし・合成可能・名前空間で選択的ロード・tool result filtering（要点のみ）。</p>
+  <p>3戦略：<strong>Agentic search</strong>（自然言語→ES|QL、要約だけ返すサブエージェント）／<strong>Domain workflows</strong>（決定論的チェーン、state machine/DAG）／<strong>Dynamic tool discovery (RAG-MCP)</strong>：ツールメタデータをベクトルDBに格納し上位 N だけ取得。<strong>呼び出し精度3倍・トークン50%超削減</strong>。</p>
+
+  <h3><span class="num">05</span>パイプラインと4戦略</h3>
+  <div class="pipe">
+    <span class="step">① 取得・生成</span><span class="arr">→</span>
+    <span class="step">② 処理（最適化）</span><span class="arr">→</span>
+    <span class="step">③ 管理（短期／長期）</span>
+  </div>
+  <table>
+    <thead><tr><th>戦略</th><th>内容</th></tr></thead>
+    <tbody>
+      <tr><td>Selection（選択）</td><td>窓外に置き必要時に JIT 取得。ハイブリッド（キーワード＋意味＋グラフ）で絞る。</td></tr>
+      <tr><td>Writing（書き込み）</td><td>外部メモリ（scratchpad/DB）にオフロード。計画を書き出す。</td></tr>
+      <tr><td>Compression（圧縮）</td><td>Summarization と Trimming（古いメッセージ・冗長ツール出力を削除）。</td></tr>
+      <tr><td>Isolation（分離）</td><td>独立窓のサブエージェントに sub-task。リードは蒸留結果のみ受領。</td></tr>
+    </tbody>
+  </table>
+
+  <h3><span class="num">06</span>中核の制約と失敗モード</h3>
+  <p>制約：context rot・$O(n^2)$・lost in the middle・ノイズ。本番の失敗モード：<strong>context poisoning</strong>（OWASP LLM Top 10）・<strong>goal drift</strong>・<strong>capacity overflow</strong>。</p>
+
+  <h3><span class="num">07</span>Elastic の優位性 &mdash; 1プラットフォームに集約</h3>
+  <div class="eladv">
+  <p>Elasticsearch は<strong>ベクトルDB・検索エンジン・NoSQL 文書ストアを統合</strong>し、context engineering の要素を単一システムで満たせる。</p>
+  <div class="grid">
+    <div class="tile"><h5><span class="ic" style="color:var(--teal);background:var(--teal-soft)">▥</span>1つのデータストア</h5><p>チケット・ログ・文書等の非構造化データをカラムナ保存で統合しリアルタイム検索。</p></div>
+    <div class="tile"><h5><span class="ic" style="color:var(--teal);background:var(--teal-soft)">⚖</span>最良の関連性エンジン</h5><p>ハイブリッド検索・セマンティックリランキング・GPU 内蔵推論（Jina AI／第三者）。</p></div>
+    <div class="tile"><h5><span class="ic" style="color:var(--teal);background:var(--teal-soft)">⚒</span>Agent Builder</h5><p>ES|QL カスタムツール・データチャット・外部エージェント統合。数分で出荷。</p></div>
+    <div class="tile"><h5><span class="ic" style="color:var(--teal);background:var(--teal-soft)">🛡</span>安全に、すべて計測</h5><p>文書・フィールド級 RBAC、テレメトリ、ガードレール、オンプレ／エアギャップ、検索評価（nDCG）。</p></div>
+  </div>
+  </div>
+  <a class="totop" href="#top">↑ トップへ</a>
+</div>
+</section>
+<div class="wrap"><hr class="divider"></div>
+
+<!-- ===================== SYNTHESIS ===================== -->
+<section class="sec sec-synth" id="synthesis">
+<div class="wrap">
+  <div class="sechead">
+    <span class="eyebrow">Synthesis &mdash; Elastic Perspective</span>
+    <h2 class="title">統合まとめ：1つの定義・要素・設計ポイント</h2>
+    <p class="lede">4社の主張を1つに束ね、<strong>統一定義／要素／各要素の詳細な設計ポイント</strong>として整理する。最後の景色は、顧客が Foundry + Azure AI Search で AI エージェントを開発する中へ Elastic を提案する立場から描く。</p>
+  </div>
+
+  <h3><span class="num">01</span>1つの定義</h3>
+  <p>Anthropic「最適トークン集合のキュレーション」、OpenAI「ある瞬間にモデルが何を知っているかを形作る」、Google「意味のアーキテクチャ」、Elastic「適切な情報を適切な時に与える実践」。これらを束ねると &mdash;</p>
+  <div class="bigdef">
+    <div class="label">Unified Definition</div>
+    <p>Context engineering とは、LLM／エージェントが望ましい挙動を一貫して生み出すために、推論のたびに<strong>限られたコンテキストウィンドウ（作業記憶）へ入れる情報を、能動的に選び・構造化し・管理する</strong>システム設計の規律である。</p>
+    <p class="note">プロンプトエンジニアリングが「どう言い回すか（単一ターン）」を扱うのに対し、context engineering は「モデルは何を知る必要があるか（システム全体の情報フロー）」を扱い、プロンプトエンジニアリングはその<strong>部分集合</strong>。<span class="vendor ve">E</span><span class="vendor va">A</span>共通の指導原理は「<strong>望ましい結果の確率を最大化する、最小で最高シグナルなトークン集合を見つけること</strong>」。</p>
+  </div>
+
+  <h3><span class="num">02</span>4社が共有する前提</h3>
+  <table>
+    <thead><tr><th>共通認識</th><th>内容</th></tr></thead>
+    <tbody>
+      <tr><td>コンテキストは有限資源</td><td><span class="vendor va">A</span><span class="vendor vg">G</span><span class="vendor ve">E</span> が <strong>context rot</strong>・$O(n^2)$・lost in the middle を指摘。窓は埋めれば良いわけではない。</td></tr>
+      <tr><td>JIT（必要時取得）への移行</td><td><span class="vendor va">A</span> の just-in-time、<span class="vendor ve">E</span> の Selection、<span class="vendor vg">G</span> の Transient 層。</td></tr>
+      <tr><td>記憶のロス性とガバナンス</td><td>誤りは <strong>context poisoning</strong> として波及。<span class="vendor vo">O</span> はガードレール＋evals、<span class="vendor ve">E</span> は RBAC。</td></tr>
+      <tr><td>ツールは最小限で曖昧さなく</td><td><span class="vendor va">A</span>「人間が選べないなら AI も選べない」、<span class="vendor ve">E</span> の RAG-MCP。</td></tr>
+      <tr><td>モデル向上＝人手キュレーション減</td><td><span class="vendor va">A</span>。ただし巨大窓でも working set を絞る価値は残る。</td></tr>
+    </tbody>
+  </table>
+  <p class="sub"><strong>強調点の違い</strong>：<span class="vendor va">A</span>理論と長期ホライズン技法／<span class="vendor vo">O</span>SDK 実装と evals／<span class="vendor vg">G</span>インフラ（巨大窓・キャッシュ・embedding）／<span class="vendor ve">E</span>検索プラットフォームへの集約。視点は補完的。</p>
+
+  <h3><span class="num">03</span>要素 &mdash; コンテキストを構成するもの</h3>
+  <table>
+    <thead><tr><th>統合要素</th><th>Anthropic</th><th>OpenAI</th><th>Google</th><th>Elastic</th></tr></thead>
+    <tbody>
+      <tr><td>1. システム指示</td><td>System prompt（right altitude）</td><td>instructions / memory_policy</td><td>Persistent 層</td><td>Instructions</td></tr>
+      <tr><td>2. ユーザープロンプト</td><td>（message history）</td><td>user turn</td><td>（入力）</td><td>User prompt（6要素）</td></tr>
+      <tr><td>3. 検索（RAG）</td><td>agentic search / JIT</td><td>（RAG-heavy 用途）</td><td>RAG＋Gemini Embedding</td><td>RAG＋hybrid＋rerank</td></tr>
+      <tr><td>4. メモリ</td><td>note-taking / memory tool</td><td>short＋long-term state</td><td>Semi-persistent 層</td><td>short／long-term memory</td></tr>
+      <tr><td>5. ツール</td><td>最小限・token効率</td><td>memory-as-a-tool</td><td>tool定義をembedding</td><td>tools＋RAG-MCP</td></tr>
+      <tr><td>6. 構造化出力</td><td>（出力記述）</td><td>構造化サマリ</td><td>—</td><td>Structured outputs</td></tr>
+      <tr><td>＋ 窓管理（横断）</td><td>compaction/clearing/sub-agent</td><td>trimming/summarization</td><td>2M窓＋caching</td><td>4戦略</td></tr>
+      <tr><td>＋ ガバナンス・評価</td><td>recall→precision</td><td>evals＋guardrails</td><td>—</td><td>RBAC・nDCG評価</td></tr>
+    </tbody>
+  </table>
+
+  <h3><span class="num">04</span>各要素の詳細な設計ポイント</h3>
+
+  <div class="elem">
+    <div class="ehead"><div class="enum">1</div><div><div class="etitle">システム指示</div><div class="esub">役割・規則・ガードレールを定める永続層</div></div></div>
+    <div class="dp">設計ポイント</div>
+    <ul>
+      <li><span class="vendor va">A</span><strong>「ちょうど良い高度」で書く</strong>。脆い if-else と曖昧な一般論の間。挙動を完全に示す<strong>最小限</strong>の情報（最小＝短いではない）。</li>
+      <li><span class="vendor va">A</span><span class="vendor ve">E</span>XML タグ／Markdown 見出しで区切り、抽象ルールより<strong>具体例</strong>を。</li>
+      <li><span class="vendor ve">E</span>特異性・柔軟性・簡潔性を両立。<strong>位置バイアス</strong>を踏まえ重要な制約は目立つ位置へ。蓄積で押し出されると <strong>behavioral drift</strong>。</li>
+      <li><span class="vendor vg">G</span>「AI の世界の物理法則」。全インタラクションで有効に。</li>
+      <li><span class="vendor va">A</span>まず最良モデル＋最小プロンプトで試し、失敗モードに応じ指示・例を足す。</li>
+    </ul>
+  </div>
+
+  <div class="elem">
+    <div class="ehead"><div class="enum">2</div><div><div class="etitle">ユーザープロンプト</div><div class="esub">挙動を起動する最も注意重みの高い入力</div></div></div>
+    <div class="dp">設計ポイント</div>
+    <ul>
+      <li><span class="vendor ve">E</span>6要素：<strong>directive・exemplars・output formatting・style・role・additional information</strong>。</li>
+      <li><span class="vendor ve">E</span>最高の注意重みを持ち他所の矛盾を上書き。session 固有情報の注入口に。</li>
+      <li><span class="vendor ve">E</span>最も予測不能。query understanding 再定式化・prompt injection 検知・フォールバックで吸収。</li>
+      <li><span class="vendor ve">E</span>算術・推論には zero-shot より <strong>chain-of-thought</strong>。実例：曖昧な「良い本を推薦」は失敗、ジャンルと具体例で 103,063 件から的確に検索。</li>
+    </ul>
+  </div>
+
+  <div class="elem">
+    <div class="ehead"><div class="enum">3</div><div><div class="etitle">検索（RAG / リトリーバル）</div><div class="esub">外部知識を JIT で取得しグラウンディング</div></div></div>
+    <div class="dp">設計ポイント</div>
+    <ul>
+      <li><span class="vendor ve">E</span>RAG は3限界（ドメイン知識欠如・新情報・ハルシネーション）に対処。<strong>context confusion</strong> を理由に「RAG は死んだ」に反論。</li>
+      <li><span class="vendor ve">E</span><strong>Semantic chunking</strong>／<strong>Hybrid search</strong>（ベクトル＋BM25）／<strong>Reranking</strong>（上位100→高精度再スコア）。</li>
+      <li><span class="vendor va">A</span><strong>JIT＋ハイブリッド戦略</strong>：軽量参照を保持し実行時ロード。速度 vs 精度。動的でない領域は事前取得寄り。</li>
+      <li><span class="vendor vg">G</span><strong>Embedding が中核</strong>：文書・履歴・ツール定義を作業記憶へ統合。Matryoshka で次元圧縮。</li>
+    </ul>
+  </div>
+
+  <div class="elem">
+    <div class="ehead"><div class="enum">4</div><div><div class="etitle">メモリ（短期・長期）</div><div class="esub">セッション内の継続性と横断の永続化</div></div></div>
+    <div class="dp">短期記憶</div>
+    <ul>
+      <li><span class="vendor vo">O</span><span class="vendor ve">E</span><strong>Trimming</strong>（直近 N ターン、決定論的・逐語だが長距離は突然消失）と<strong>Summarization</strong>（圧縮、長距離保持だがロス・遅延・poisoning）。</li>
+      <li><span class="vendor vo">O</span>サマリは「引き継ぎ」の感覚で。マイルストーン・時系列・チャンク化・不確実は <code>UNVERIFIED</code>。</li>
+    </ul>
+    <div class="dp">長期記憶</div>
+    <ul>
+      <li><span class="vendor vo">O</span><strong>state ベース</strong>：構造化プロファイル＋非構造化ノート。Global/Session 分離。ライフサイクル <strong>Inject→Reason→Distill→Consolidate</strong>、忘却は必須。</li>
+      <li><span class="vendor va">A</span><strong>note-taking / memory tool</strong>：窓外ストレージにメモ。check-memory-first。<code>CLAUDE.md</code>（ユーザー）＋auto memory（モデル）。</li>
+      <li><span class="vendor ve">E</span>語彙・意味・ハイブリッド検索で過去メモリ取得。優先順位は<strong>現在の発話 &gt; session &gt; global（助言的）</strong>。</li>
+    </ul>
+  </div>
+
+  <div class="elem">
+    <div class="ehead"><div class="enum">5</div><div><div class="etitle">ツール</div><div class="esub">外部システムと対話し追加コンテキストを引き込む契約</div></div></div>
+    <div class="dp">設計ポイント</div>
+    <ul>
+      <li><span class="vendor va">A</span><span class="vendor ve">E</span><strong>最小限・曖昧さなし・1機能1ツール</strong>。tool result filtering で要点のみ返す。</li>
+      <li><span class="vendor ve">E</span>ツール定義は窓の 30〜40% を食いうる。合成可能な小ツール、名前空間で選択的ロード。</li>
+      <li><span class="vendor ve">E</span><strong>Agentic search</strong>／<strong>Domain workflows</strong>／<strong>RAG-MCP</strong>（呼び出し精度3倍・トークン50%超削減）。</li>
+      <li><span class="vendor va">A</span>self-contained・error 頑健・記述的パラメータ。<span class="vendor vg">G</span>ツール定義自体を embedding して選択。</li>
+    </ul>
+  </div>
+
+  <div class="elem">
+    <div class="ehead"><div class="enum">6</div><div><div class="etitle">構造化出力</div><div class="esub">下流システムとの契約となるスキーマ準拠の出力</div></div></div>
+    <div class="dp">設計ポイント</div>
+    <ul>
+      <li><span class="vendor ve">E</span>JSON/XML/テーブル等。REST の OpenAPI 契約に相当。function calling と組み合わせ標準契約を定める。</li>
+      <li><span class="vendor ve">E</span>構文不正な JSON に備え<strong>優雅なエラー処理</strong>。出力形式の明示で parsing エラー減・品質向上。</li>
+      <li><span class="vendor vo">O</span>記憶サマリも見出し付き<strong>構造化フォーマット</strong>にすると後続処理・評価が容易。</li>
+    </ul>
+  </div>
+
+  <h3><span class="num">05</span>横断テーマ &mdash; 窓管理とガバナンス</h3>
+  <table>
+    <thead><tr><th>技法</th><th>作用</th><th>提唱（強調）</th></tr></thead>
+    <tbody>
+      <tr><td>Compaction / Summarization</td><td>会話全体を高忠実サマリに圧縮し窓を再起動</td><td><span class="vendor va">A</span><span class="vendor vo">O</span><span class="vendor ve">E</span></td></tr>
+      <tr><td>Tool-result clearing / Trimming</td><td>古い・再取得可能な結果や古いターンを削除</td><td><span class="vendor va">A</span><span class="vendor vo">O</span><span class="vendor ve">E</span></td></tr>
+      <tr><td>Memory（書き込み）</td><td>情報を窓外へ。セッション横断で生存</td><td><span class="vendor va">A</span><span class="vendor vo">O</span><span class="vendor ve">E</span></td></tr>
+      <tr><td>Isolation / Sub-agents</td><td>独立窓の専門エージェント、蒸留結果のみ集約</td><td><span class="vendor va">A</span><span class="vendor ve">E</span></td></tr>
+      <tr><td>巨大窓＋Context caching</td><td>窓を 2M に広げ背景データを 90% 割引でキャッシュ</td><td><span class="vendor vg">G</span></td></tr>
+    </tbody>
+  </table>
+  <ul>
+    <li><span class="vendor ve">E</span>失敗モード：context poisoning・goal drift・capacity overflow。</li>
+    <li><span class="vendor vo">O</span>記憶は高価値の攻撃面。capture・consolidation・injection の各段でガードレール。</li>
+    <li><span class="vendor vo">O</span><strong>evals is all you need</strong>。<span class="vendor ve">E</span>RBAC・テレメトリ・nDCG・エアギャップ。</li>
+  </ul>
+
+  <h3><span class="num">06</span>Elastic 視点での実装 &mdash; 1プラットフォームに集約</h3>
+  <div class="callout teal">
+    <div class="label">Elastic への対応づけ</div>
+    <p>顧客は <strong>Foundry + Azure AI Search</strong> でエージェント構築中。Elastic を重ねる価値は「<strong>検索（要素3）の関連性</strong>と<strong>メモリ（要素4）の永続化</strong>を1ストアで、ハイブリッド＋リランクで高精度に、RBAC・エアギャップ込みで」提供できる点。</p>
+  </div>
+  <table>
+    <thead><tr><th>統合要素</th><th>Elastic の手段</th></tr></thead>
+    <tbody>
+      <tr><td>3. 検索（RAG）</td><td>BM25＋kNN の<strong>ハイブリッド検索</strong>標準、<strong>セマンティックリランキング</strong>、EIS の GPU 内蔵推論（Jina AI／第三者）。意図解釈・権限フィルタ・ランキング。</td></tr>
+      <tr><td>4. メモリ</td><td>長期メモリストアとして語彙・意味・ハイブリッド検索で過去セッション取得。多様な非構造化データを1ストアに。</td></tr>
+      <tr><td>5. ツール</td><td>Agent Builder で ES|QL ツール登録。メタデータを索引し RAG-MCP で動的選択。</td></tr>
+      <tr><td>1・2・6.</td><td>Agent Builder がプロンプト・データ・ワークフローを接続。構造化／非構造化を両立。</td></tr>
+      <tr><td>窓管理・ガバナンス</td><td>agentic search による分離、RBAC（文書・フィールド級）、テレメトリ、nDCG 評価、オンプレ／完全エアギャップ。</td></tr>
+    </tbody>
+  </table>
+  <p class="sub">相対性ジャーニー：<strong>関連性から始める</strong>→<strong>コンテキストを設計</strong>（Jina＋リランカー）→<strong>エージェントをオーケストレーション</strong>（Agent Builder）。オープンな Inference API と LangChain・LlamaIndex・MCP 統合で自前モデルも持ち込める。</p>
+  <div class="bigdef">
+    <div class="label">結論</div>
+    <p style="font-size:18px">4社の context engineering は視点（理論／実装／インフラ／プラットフォーム）が違うだけで<strong>同じ規律</strong>を語る。共通原理は「<strong>有限の窓へ、最小で最高シグナルな情報を、能動的に選び・構造化し・管理する</strong>」。6要素のうち<strong>関連性の高い検索とスケールするメモリ</strong>が最も差がつくレバーで、Elasticsearch ＋ Agent Builder はそこを1プラットフォームで埋める提案足りうる。</p>
+  </div>
+  <a class="totop" href="#top">↑ トップへ</a>
+</div>
+</section>
+
+<div class="wrap">
+  <div class="foot">
+    <p>このレポートは <code>anthoropic/</code> <code>openai/</code> <code>google/</code> <code>elastic/</code> の収集済み資料のみを根拠に作成。Web 検索その他の外部情報は使用していません。Google 記事の性能値は開発者提供で Google 独立検証ではない旨を原文が注記。</p>
+    <p>個別ページ版： <a href="index.html">概要</a> ・ <a href="anthropic.html">Anthropic</a> ・ <a href="openai.html">OpenAI</a> ・ <a href="google.html">Google</a> ・ <a href="elastic.html">Elastic</a> ・ <a href="synthesis.html">統合まとめ</a></p>
+  </div>
+</div>
+</body>
+</html>

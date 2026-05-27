@@ -48,6 +48,7 @@
 
 - HTML ページ
   - [CKA 想定問題トレンド &amp; 例題集 (v1.35 / 2025-2026 年版)](htmls/cka.html ':ignore :target=_blank')
+  - [Context Engineering 総合レポート &mdash; Anthropic / OpenAI / Google / Elastic](htmls/context-engineering.html ':ignore :target=_blank')
   - [Elastic Cloud Serverless 技術 Deep Dive レポート](htmls/elastic_cloud_serverlss.html ':ignore :target=_blank')
   - [Elastic Cloud vs Azure AI Search / AWS OpenSearch / Google Vertex AI Search — 比較項目定義](htmls/elastic_vs.html ':ignore :target=_blank')
   - [GPU / AI Accelerator Specs](htmls/gpu_specs.html ':ignore :target=_blank')
