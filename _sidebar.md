@@ -1,20 +1,5 @@
 - [ホーム](/)
 
-- Hugging Face Community Blogs
-  - [HoloTab by HCompany: AI ブラウザコンパニオン](docs/hfblogs/260415_Hcompany__holotab.md)
-  - [VAKRA の内側: エージェントの推論・ツール使用・失敗モード分析](docs/hfblogs/260415_ibm-research__vakra-benchmark-analysis.md)
-  - [Ecom-RLVE: e コマース会話エージェント向けの適応的検証可能環境](docs/hfblogs/260416_ecom-rlve.md)
-  - [Sentence Transformers でマルチモーダル埋め込みモデルを訓練する](docs/hfblogs/260416_train-multimodal-sentence-transformers.md)
-  - [transformers-to-mlx Skill: コードエージェント時代の MLX 移植自動化](docs/hfblogs/260416_transformers-to-mlx.md)
-  - [AI とサイバーセキュリティの未来: なぜオープンネスが重要なのか](docs/hfblogs/260421_cybersecurity-openness.md)
-  - [QIMMA قِمّة: 品質を最優先したアラビア語 LLM リーダーボード](docs/hfblogs/260421_tiiuae__qimma-arabic-leaderboard.md)
-  - [Transformers.js を Chrome 拡張機能で使う：Gemma 4 ブラウザアシスタントの設計](docs/hfblogs/260423_transformersjs-chrome-extension.md)
-  - [DeepSeek-V4: エージェントが本当に使える 100 万トークン文脈](docs/hfblogs/260424_deepseekv4.md)
-  - [OpenAI Privacy Filter でスケーラブルな Web アプリを作る](docs/hfblogs/260427_openai-privacy-filter-web-apps.md)
-  - [AI Evals are Becoming the New Compute Bottleneck](docs/hfblogs/260429_evaleval__eval-costs-bottleneck.md)
-  - [Granite 4.1 LLMs: IBM の新世代基盤モデル](docs/hfblogs/260429_ibm-granite__granite-4-1.md)
-  - [DeepInfra が Hugging Face Inference Providers に統合](docs/hfblogs/260429_inference-providers-deepinfra.md)
-
 - Jina Embed Models
   - [Jina Embeddings 系列 5モデル 比較サマリ](docs/jina-embed-models/README.md)
   - [jina-embeddings-v1 モデル情報レポート](docs/jina-embed-models/jina-embeddings-v1.md)
@@ -22,15 +7,6 @@
   - [jina-embeddings-v3 モデル情報レポート](docs/jina-embed-models/jina-embeddings-v3.md)
   - [jina-embeddings-v4 モデル情報レポート](docs/jina-embed-models/jina-embeddings-v4.md)
   - [jina-embeddings-v5-text モデル情報レポート](docs/jina-embed-models/jina-embeddings-v5-text.md)
-
-- Models
-  - [harrier-oss-v1-270m アーキテクチャ解析レポート](docs/models/harrier-oss-v1-270m.md)
-  - [japanese-splade-v2 モデル情報レポート](docs/models/japanese-splade-v2.md)
-  - [jina-embeddings-v5-text-nano モデル情報レポート](docs/models/jina-embeddings-v5-text-nano.md)
-  - [jina-reranker-m0](docs/models/jina-reranker-m0.md)
-  - [Qwen3-0.6B-Base アーキテクチャ解析レポート](docs/models/Qwen3-0.6B-Base.md)
-  - [Qwen3-8B アーキテクチャ解析レポート](docs/models/Qwen3-8B.md)
-  - [voyage-4-nano アーキテクチャ解析レポート](docs/models/voyage-4-nano.md)
 
 - Reranker モデル
   - [リランキングモデル（Cross-Encoder）市場比較レポート](docs/reranker/README.md)
