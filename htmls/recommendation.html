@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>現代のリコメンドシステム全体像 — 多段ファネル構成 技術解説</title>
+<script>
+  MathJax = {
+    tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath: [['$$', '$$'], ['\\[', '\\]']] },
+    svg: { fontCache: 'global' }
+  };
+</script>
+<script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js" async></script>
+<style>
+:root{
+  --bg:#0d1117; --bg2:#161b22; --bg3:#1c2330; --border:#30363d;
+  --fg:#e6edf3; --fg2:#aeb9c5; --muted:#8b949e;
+  --accent:#58a6ff; --accent2:#7ee787; --accent3:#d2a8ff; --accent4:#ffa657;
+  --warn:#f0883e; --pink:#f778ba;
+  --r1:#ff7b72; --r2:#ffa657; --r3:#7ee787; --r4:#58a6ff;
+}
+*{box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{
+  margin:0; background:var(--bg); color:var(--fg);
+  font-family:-apple-system,BlinkMacSystemFont,"Hiragino Sans","Noto Sans JP","Segoe UI",sans-serif;
+  line-height:1.85; font-size:16px;
+}
+.wrap{display:flex; max-width:1400px; margin:0 auto;}
+/* sidebar */
+nav.toc{
+  position:sticky; top:0; align-self:flex-start; height:100vh; overflow-y:auto;
+  width:280px; flex:0 0 280px; padding:28px 18px; border-right:1px solid var(--border);
+  background:var(--bg2); font-size:13.5px;
+}
+nav.toc h2{font-size:13px; color:var(--muted); text-transform:uppercase; letter-spacing:.08em; margin:0 0 14px;}
+nav.toc a{display:block; color:var(--fg2); text-decoration:none; padding:5px 10px; border-radius:6px; border-left:2px solid transparent; transition:.15s;}
+nav.toc a:hover{background:var(--bg3); color:var(--fg);}
+nav.toc a.lv2{padding-left:24px; font-size:12.5px; color:var(--muted);}
+nav.toc .grp{margin-bottom:6px;}
+nav.toc .s1{border-left-color:var(--r1);} nav.toc .s2{border-left-color:var(--r2);}
+nav.toc .s3{border-left-color:var(--r3);} nav.toc .s4{border-left-color:var(--r4);}
+main{flex:1; padding:48px 56px; min-width:0; max-width:980px;}
+@media(max-width:1000px){
+  nav.toc{display:none;} main{padding:28px 18px;}
+}
+h1{font-size:30px; line-height:1.35; margin:0 0 8px; font-weight:800; letter-spacing:.01em;}
+.subtitle{color:var(--muted); font-size:15px; margin-bottom:28px;}
+h2{font-size:24px; margin:56px 0 18px; padding-bottom:10px; border-bottom:2px solid var(--border); font-weight:700; scroll-margin-top:20px;}
+h3{font-size:19px; margin:36px 0 12px; font-weight:700; scroll-margin-top:20px; color:var(--fg);}
+h4{font-size:16px; margin:24px 0 8px; color:var(--accent);}
+p{margin:12px 0;}
+a{color:var(--accent);}
+code{background:var(--bg3); padding:2px 6px; border-radius:5px; font-size:13.5px; color:var(--accent2); font-family:"SF Mono",Menlo,Consolas,monospace;}
+strong{color:#fff; font-weight:700;}
+ul,ol{padding-left:24px;} li{margin:6px 0;}
+.lead{font-size:17px; color:var(--fg2); background:var(--bg2); border-left:4px solid var(--accent); padding:14px 18px; border-radius:0 8px 8px 0; margin:18px 0;}
+/* stage badges */
+.stage-badge{display:inline-block; font-size:12px; font-weight:700; padding:3px 12px; border-radius:20px; margin-bottom:6px;}
+.b1{background:rgba(255,123,114,.15); color:var(--r1); border:1px solid rgba(255,123,114,.4);}
+.b2{background:rgba(255,166,87,.15); color:var(--r2); border:1px solid rgba(255,166,87,.4);}
+.b3{background:rgba(126,231,135,.15); color:var(--r3); border:1px solid rgba(126,231,135,.4);}
+.b4{background:rgba(88,166,255,.15); color:var(--r4); border:1px solid rgba(88,166,255,.4);}
+/* tables */
+.tbl{overflow-x:auto; margin:18px 0;}
+table{border-collapse:collapse; width:100%; font-size:14px; background:var(--bg2); border-radius:8px; overflow:hidden;}
+th,td{border:1px solid var(--border); padding:10px 13px; text-align:left; vertical-align:top;}
+th{background:var(--bg3); color:var(--fg); font-weight:700; font-size:13.5px;}
+tr:hover td{background:rgba(88,166,255,.04);}
+/* cards / callouts */
+.note{background:var(--bg2); border:1px solid var(--border); border-radius:10px; padding:16px 20px; margin:18px 0;}
+.note.tip{border-left:4px solid var(--accent2);}
+.note.warn{border-left:4px solid var(--warn);}
+.note.key{border-left:4px solid var(--accent3);}
+.note .ntitle{font-weight:700; font-size:14px; margin-bottom:6px; display:flex; align-items:center; gap:8px;}
+.note.tip .ntitle{color:var(--accent2);} .note.warn .ntitle{color:var(--warn);} .note.key .ntitle{color:var(--accent3);}
+/* funnel viz */
+.funnel{margin:28px 0; display:flex; flex-direction:column; align-items:center; gap:4px;}
+.funnel .seg{width:100%; text-align:center; padding:16px 12px; border-radius:8px; color:#0d1117; font-weight:700; position:relative;}
+.funnel .seg small{display:block; font-weight:500; font-size:12.5px; opacity:.85; margin-top:2px;}
+.fseg1{background:linear-gradient(90deg,#ff7b72,#ff9b94); width:100%;}
+.fseg2{background:linear-gradient(90deg,#ffa657,#ffc089); width:78%;}
+.fseg3{background:linear-gradient(90deg,#7ee787,#a5f0ab); width:54%;}
+.fseg4{background:linear-gradient(90deg,#58a6ff,#89c4ff); width:32%;}
+.farrow{color:var(--muted); font-size:18px;}
+/* formula block */
+.formula{background:var(--bg2); border:1px solid var(--border); border-radius:8px; padding:8px 18px; margin:16px 0; overflow-x:auto;}
+/* pill */
+.pill{display:inline-block; font-size:12px; padding:2px 9px; border-radius:12px; background:var(--bg3); border:1px solid var(--border); color:var(--fg2); margin:2px 3px 2px 0;}
+hr{border:none; border-top:1px solid var(--border); margin:48px 0;}
+.muted{color:var(--muted);}
+.kicker{color:var(--accent4); font-weight:700; font-size:13px; letter-spacing:.04em; text-transform:uppercase;}
+footer{margin-top:64px; padding-top:24px; border-top:1px solid var(--border); color:var(--muted); font-size:13px;}
+/* grid of mini cards */
+.grid2{display:grid; grid-template-columns:1fr 1fr; gap:14px; margin:18px 0;}
+@media(max-width:680px){.grid2{grid-template-columns:1fr;}}
+.mini{background:var(--bg2); border:1px solid var(--border); border-radius:10px; padding:14px 16px;}
+.mini h5{margin:0 0 6px; font-size:14px; color:var(--accent);}
+.mini p{margin:4px 0; font-size:13.5px; color:var(--fg2);}
+</style>
+</head>
+<body>
+<div class="wrap">
+<nav class="toc">
+  <h2>目次</h2>
+  <div class="grp"><a href="#overview">0. 全体パイプライン</a></div>
+  <div class="grp">
+    <a class="s1" href="#retrieval">第1段 Retrieval（候補生成）</a>
+    <a class="lv2" href="#r-cf">協調フィルタリング</a>
+    <a class="lv2" href="#r-mf">行列分解（MF / ALS）</a>
+    <a class="lv2" href="#r-twotower">Two-Tower / 対照学習</a>
+    <a class="lv2" href="#r-gnn">グラフ（GNN）</a>
+    <a class="lv2" href="#r-seq">シーケンシャル</a>
+    <a class="lv2" href="#r-gen">生成型リトリーバル</a>
+    <a class="lv2" href="#r-ann">ANN 基盤技術</a>
+  </div>
+  <div class="grp"><a class="s2" href="#preranking">第2段 Pre-ranking（粗選別）</a></div>
+  <div class="grp">
+    <a class="s3" href="#ranking">第3段 Ranking（精密順位付け）</a>
+    <a class="lv2" href="#k-ltr">ランク学習（LTR）</a>
+    <a class="lv2" href="#k-cross">クロス特徴モデル</a>
+    <a class="lv2" href="#k-attn">Attention / 系列</a>
+    <a class="lv2" href="#k-mtl">マルチタスク学習</a>
+    <a class="lv2" href="#k-trans">Transformer 系</a>
+  </div>
+  <div class="grp">
+    <a class="s4" href="#reranking">第4段 Re-ranking（再順位付け）</a>
+    <a class="lv2" href="#rr-div">多様性 (MMR/DPP)</a>
+    <a class="lv2" href="#rr-bandit">バンディット</a>
+  </div>
+  <div class="grp"><a href="#infra">基盤技術スタック</a></div>
+  <div class="grp"><a href="#future">次世代の方向性</a></div>
+</nav>
+
+<main>
+<span class="kicker">Recommender System Architecture</span>
+<h1>現代のリコメンドシステム全体像<br>多段（マルチステージ）ファネル構成 技術解説</h1>
+<p class="subtitle">Retrieval → Pre-ranking → Ranking → Re-ranking の 4 段バトンリレーを、各段の損失関数・モデル構造・基盤技術まで踏み込んで解説する。</p>
+
+<div class="lead">
+数百万〜数十億件のアイテムを、各段で「精度を上げながら件数を絞る」バトンリレー。
+前段ほど <strong>速度と再現率（Recall）</strong>、後段ほど <strong>精度（Precision）と体験最適化</strong> を優先する。
+前段で誤って落とした候補は後段で復活できないため、<strong>Retrieval の再現率が全体性能の上限を決める</strong>。
+</div>
+
+<!-- ============ OVERVIEW ============ -->
+<h2 id="overview">0. 全体パイプライン：3〜4段ファネル</h2>
+
+<div class="funnel">
+  <div class="seg fseg1">第1段 Retrieval（候補生成）<small>数百万〜数十億 → 数百〜数千 ｜ Recall・速度</small></div>
+  <div class="farrow">▼</div>
+  <div class="seg fseg2">第2段 Pre-ranking（粗選別）<small>数百〜数千 → 数十〜数百 ｜ コスパ・速度</small></div>
+  <div class="farrow">▼</div>
+  <div class="seg fseg3">第3段 Ranking（精密順位付け）<small>数十〜数百 → 数十 ｜ Precision</small></div>
+  <div class="farrow">▼</div>
+  <div class="seg fseg4">第4段 Re-ranking（再順位付け）<small>数十 → 表示順 ｜ 多様性・公平性・新鮮さ</small></div>
+</div>
+
+<div class="tbl">
+<table>
+<thead><tr><th>段</th><th>名称</th><th>件数 入力→出力</th><th>重視する指標</th><th>レイテンシ予算</th><th>役割</th></tr></thead>
+<tbody>
+<tr><td><span class="stage-badge b1">第1段</span></td><td>Retrieval</td><td>10⁶〜10⁹ → 10²〜10³</td><td>Recall・速度</td><td>~10ms</td><td>巨大カタログから「好みに合いそう」を高速にくり抜く</td></tr>
+<tr><td><span class="stage-badge b2">第2段</span></td><td>Pre-ranking（任意）</td><td>10²〜10³ → 10¹〜10²</td><td>コスパ・速度</td><td>~10ms</td><td>重い Ranking の前に軽量モデル＋ルールで足切り</td></tr>
+<tr><td><span class="stage-badge b3">第3段</span></td><td>Ranking</td><td>10¹〜10² → 10¹</td><td>Precision</td><td>10〜50ms</td><td>リッチな特徴量＋深層モデルで多目的スコアリング</td></tr>
+<tr><td><span class="stage-badge b4">第4段</span></td><td>Re-ranking</td><td>10¹ → 表示順</td><td>多様性・公平性</td><td>~数ms</td><td>ビジネス制約・体験最適化で最終的な並びを調整</td></tr>
+</tbody>
+</table>
+</div>
+
+<div class="note key">
+<div class="ntitle">◆ なぜ多段にするのか — 計算量の問題</div>
+全カタログ $N=10^8$ 件すべてに重い深層ランキングモデル（1件あたり数百μs）を適用すると、1リクエストで数万秒かかり非現実的。
+そこで「軽くて速いが粗い」モデルで $N$ を $10^3$ 程度まで一気に落とし、「重くて正確」なモデルを少数の候補にだけ使う。
+各段は「<strong>前段の出力分布</strong>」を入力とするため、段ごとに <em>Sample Selection Bias</em>（前段を通過したものしか学習で見えない）が生じる点が実務上の難所。
+</div>
+
+<!-- ============ RETRIEVAL ============ -->
+<h2 id="retrieval"><span class="stage-badge b1">第1段</span> Retrieval（候補生成）</h2>
+
+<div class="lead">
+目的：数百万個のアイテムから、好みに合いそうな上位 100〜1,000 件を <strong>ミリ秒単位</strong>でくり抜く。
+精密な順位は問わない。「正解を取りこぼさないこと（高 Recall）」が至上命題。
+</div>
+
+<p>現代の標準は <strong>マルチチャネル</strong>（複数の網を併用）。1 つのモデルに頼らず、性質の違う候補生成器を並列で走らせ、結果をマージ・重複除去してから次段へ渡す。これにより、ある 1 チャネルの弱点（例：Two-Tower の人気バイアス、コンテンツベースのフィルターバブル）を他チャネルが補完する。</p>
+
+<div class="grid2">
+  <div class="mini"><h5>非パーソナライズ型</h5><p>人気順・トレンド・急上昇。全ユーザー行動の集計。コールドスタート時の安全網。</p></div>
+  <div class="mini"><h5>コンテンツベース</h5><p>アイテム属性／マルチモーダル埋め込みで「中身が似たもの」を探す。新着に強い。</p></div>
+  <div class="mini"><h5>協調フィルタリング</h5><p>メモリベース（近傍法）／モデルベース（行列分解）。「似た行動の人／よく一緒に買われるペア」。</p></div>
+  <div class="mini"><h5>Two-Tower</h5><p>user/item を同じ空間に射影し対照学習。ANN で高速取得。現代 Retrieval の主力。</p></div>
+  <div class="mini"><h5>グラフ（GNN）</h5><p>相互作用をグラフ化し数ホップ先まで信号伝播。間接的つながりを捉える。</p></div>
+  <div class="mini"><h5>生成型リトリーバル</h5><p>Semantic ID を Transformer で生成。ANN 不要で候補を「生成」する次世代手法。</p></div>
+</div>
+
+<!-- CF -->
+<h3 id="r-cf">協調フィルタリング（メモリベース）</h3>
+<p>数式モデルを学習せず、ユーザー×アイテムの生の行動行列から直接「似た行動」を計算する古典手法。Amazon 初期の <em>Item-to-Item CF</em> が代表例。</p>
+<h4>ユーザーベース / アイテムベース</h4>
+<ul>
+<li><strong>ユーザーベース：</strong> 自分と行動が似たユーザー（近傍）を見つけ、その人たちが好きで自分が未見のアイテムを推薦。</li>
+<li><strong>アイテムベース：</strong> 「アイテム $i$ を見た人は $j$ も見る」という共起から、アイテム間類似度を事前計算。ユーザー数 ≫ アイテム数の EC で安定し、Amazon が採用して有名に。</li>
+</ul>
+<p>類似度はコサイン類似度やピアソン相関を使う。ユーザー $u,v$ の評価ベクトル $r_u, r_v$ に対し:</p>
+<div class="formula">$$\text{sim}(u,v)=\frac{\sum_{i\in I_{uv}}(r_{ui}-\bar r_u)(r_{vi}-\bar r_v)}{\sqrt{\sum_{i}(r_{ui}-\bar r_u)^2}\sqrt{\sum_{i}(r_{vi}-\bar r_v)^2}}$$</div>
+<div class="note warn"><div class="ntitle">⚠ 弱点</div>スパース性（評価がほぼ空欄）とスケーラビリティ（ユーザー増で計算爆発）、そしてコールドスタート。これらを克服するために登場したのが次の <strong>行列分解</strong>。</div>
+
+<!-- MF -->
+<h3 id="r-mf">協調フィルタリング（行列分解：MF / SVD / ALS）</h3>
+<p>巨大でスパースな「ユーザー×アイテム」評価行列 $R \in \mathbb{R}^{m\times n}$ を、2 つの薄い <strong>潜在因子行列</strong> $P\in\mathbb{R}^{m\times k}$（ユーザー）と $Q\in\mathbb{R}^{n\times k}$（アイテム）の積で近似する。Netflix Prize（2009）で世界標準に。</p>
+<div class="formula">$$\hat r_{ui}=p_u^\top q_i,\qquad \min_{P,Q}\sum_{(u,i)\in\mathcal{K}}\left(r_{ui}-p_u^\top q_i\right)^2+\lambda\left(\|p_u\|^2+\|q_i\|^2\right)$$</div>
+<ul>
+<li><strong>SVD / FunkSVD：</strong> SGD で観測済みエントリのみ最小化。バイアス項 $\mu+b_u+b_i$ を加えるのが定番。</li>
+<li><strong>ALS（Alternating Least Squares）：</strong> $P$ と $Q$ を交互に固定して閉形式で解く。並列化しやすく Spark MLlib などで大規模対応。暗黙的フィードバック（クリック有無）向けの <em>WRMF</em> が実用的。</li>
+<li><strong>BPR（Bayesian Personalized Ranking）：</strong> 「観測ペア $>$ 未観測ペア」のペアワイズ順位損失。暗黙的フィードバックの Top-N 推薦に強い。</li>
+</ul>
+<div class="note tip"><div class="ntitle">▶ Two-Tower との関係</div>MF は「ユーザー ID とアイテム ID だけを特徴とする最も単純な Two-Tower」とみなせる。ここに任意の特徴量と非線形変換（NN）を入れて一般化したのが次の Two-Tower。</div>
+
+<!-- Two-Tower -->
+<h3 id="r-twotower">Two-Tower（双塔モデル / 対照学習）</h3>
+<p>ユーザー側（user/context 特徴）とアイテム側（item 特徴）を <strong>別々のエンコーダ（塔）</strong>で処理し、同じ次元の埋め込み空間に射影。両者の内積／コサインを相性スコアとする。</p>
+<div class="formula">$$s(u,i)=\frac{f_\theta(x_u)^\top g_\phi(x_i)}{\|f_\theta(x_u)\|\,\|g_\phi(x_i)\|}$$</div>
+<h4>対照学習（In-batch Negatives + InfoNCE）</h4>
+<p>正例（クリックした item）を近づけ、負例（その他）を遠ざける。バッチ内の他サンプルを負例に流用する <em>in-batch negative</em> が効率的:</p>
+<div class="formula">$$\mathcal{L}=-\frac{1}{B}\sum_{u}\log\frac{\exp(s(u,i_u^+)/\tau)}{\sum_{j\in\text{batch}}\exp(s(u,i_j)/\tau)}$$</div>
+<ul>
+<li><strong>人気バイアス補正：</strong> in-batch negative は人気アイテムが負例に出やすいため、<em>logQ correction</em>（サンプリング確率でロジット補正）が必須。Google の論文（Yi et al. 2019）が有名。</li>
+<li><strong>推論時の決定的な利点：</strong> アイテム塔はオフラインで全アイテムを事前にベクトル化し ANN インデックスに格納できる。リクエスト時はユーザー塔だけ計算 → ANN 検索、で完結。</li>
+<li><strong>進化：</strong> 塔の中身は初期の MLP から、系列を扱う <strong>SASRec / BERT4Rec</strong>（下記）へ。user-item に context を加えた <strong>Three-Tower</strong> も。</li>
+</ul>
+<div class="note warn"><div class="ntitle">⚠ 構造的制約</div>user と item の interaction を <strong>最後の内積でしか</strong>表現できない（late interaction）。これは ANN を可能にする代償。リッチな特徴量交差は後段の Ranking に任せる、という役割分担。</div>
+
+<!-- GNN -->
+<h3 id="r-gnn">グラフベース（GNN）</h3>
+<p>ユーザー×アイテムの相互作用を <strong>二部グラフ</strong>として捉え、エッジに沿って埋め込みを伝播（メッセージパッシング）。「自分が買った商品を買った人が買った別の商品」のような <strong>高次の間接的つながり</strong>を捉えられる。</p>
+<div class="tbl"><table>
+<thead><tr><th>モデル</th><th>特徴</th></tr></thead>
+<tbody>
+<tr><td><strong>PinSage</strong></td><td>Pinterest。ランダムウォークで近傍サンプリング＋GraphSAGE。30 億ノードの本番グラフで動く工学的金字塔。</td></tr>
+<tr><td><strong>LightGCN</strong></td><td>GCN から特徴変換・非線形活性を撤廃し「近傍平均の伝播だけ」に簡素化。協調フィルタリング用途では精度↑＆軽量。</td></tr>
+<tr><td><strong>GraphSAGE</strong></td><td>近傍をサンプリングして集約。帰納的（未知ノードにも適用可）でインダクティブ。</td></tr>
+</tbody>
+</table></div>
+<p>LightGCN の伝播式（$l$ 層目の埋め込み $e^{(l)}$、$N$ は近傍）:</p>
+<div class="formula">$$e_u^{(l+1)}=\sum_{i\in N_u}\frac{1}{\sqrt{|N_u|}\sqrt{|N_i|}}e_i^{(l)},\qquad e_u=\sum_{l=0}^{L}\alpha_l\,e_u^{(l)}$$</div>
+
+<!-- Seq -->
+<h3 id="r-seq">シーケンシャル / 自己回帰型</h3>
+<p>ユーザー行動を <strong>時系列</strong>とみなし「次に何を見る／買うか」を予測。直近の興味の変化を強く反映でき、セッション推薦に必須。</p>
+<ul>
+<li><strong>SASRec：</strong> 単方向 Self-Attention（GPT 的）で「次アイテム」を自己回帰予測。長期・短期の依存を Attention の重みで動的に捉える。</li>
+<li><strong>BERT4Rec：</strong> 双方向 Transformer ＋ <em>Masked Item Prediction</em>（Cloze タスク）。系列の前後文脈を使って穴埋め学習。</li>
+<li><strong>PinnerFormer：</strong> Pinterest。長期の行動系列から「将来 14 日間の興味」を予測する end-to-end な user embedding。日次バッチで更新する実用設計。</li>
+</ul>
+
+<!-- Gen -->
+<h3 id="r-gen">生成型リトリーバル（Generative Retrieval）</h3>
+<p>「ベクトルを作って ANN で探す」という枠組み自体を捨て、アイテムに <strong>Semantic ID</strong>（意味的な離散コード列）を割り当て、Transformer で次の Semantic ID 列を <strong>生成</strong>することで候補を得る次世代手法。</p>
+<ul>
+<li><strong>TIGER（Google, 2023）：</strong> アイテムの内容埋め込みを <em>RQ-VAE</em> で量子化し階層的な Semantic ID（例: (12, 7, 3)）を付与。系列を入力に次アイテムの ID を生成。意味的に似たアイテムが似た ID 接頭辞を持つため汎化とコールドスタートに強い。</li>
+<li><strong>P5：</strong> 推薦タスク（評価予測・系列推薦・説明生成など）を全部「テキスト to テキスト」に統一し、単一の T5 ベース LM で解く。</li>
+</ul>
+<div class="note tip"><div class="ntitle">▶ なにが嬉しいか</div>アイテム数に比例した巨大な ANN インデックスを持たず、モデルパラメータに知識を畳み込める。新規アイテムも Semantic ID を振るだけで即座に生成対象になる。研究〜一部本番のフェーズ。</div>
+
+<!-- ANN -->
+<h3 id="r-ann">取得を支える基盤技術：ANN（近似最近傍探索）</h3>
+<p>Two-Tower 等で得た数千万〜億のアイテムベクトルから、クエリベクトルに近いものを <strong>厳密にではなく近似的に</strong>高速取得する。これが Retrieval のレイテンシ予算を成立させる心臓部。</p>
+<div class="tbl"><table>
+<thead><tr><th>手法</th><th>仕組み</th><th>特性</th></tr></thead>
+<tbody>
+<tr><td><strong>HNSW</strong></td><td>多層のスモールワールドグラフを辿る近傍探索</td><td>高再現率・低レイテンシ。メモリ消費は大きい。本番デフォルト。</td></tr>
+<tr><td><strong>IVF</strong></td><td>ベクトル空間をクラスタ分割し、近いクラスタだけ探索</td><td>メモリ効率良。<code>nprobe</code> で再現率と速度のトレードオフ。</td></tr>
+<tr><td><strong>PQ / OPQ</strong></td><td>ベクトルを部分空間に分割し量子化して圧縮</td><td>メモリを劇的削減。IVF と組み合わせる（IVFPQ）。</td></tr>
+<tr><td><strong>BBQ（Better Binary Quantization）</strong></td><td>ビット量子化＋補正で高圧縮・高速距離計算</td><td>Elasticsearch/Lucene 系の最新量子化。省メモリで高精度。</td></tr>
+</tbody>
+</table></div>
+<p>実装ライブラリ：<span class="pill">FAISS</span><span class="pill">ScaNN</span><span class="pill">Milvus</span><span class="pill">HNSWlib</span><span class="pill">Vespa</span>。
+マルチチャネルの結果はここでマージ・重複除去し、再現率と多様性を両立させてから Pre-ranking へ渡す。</p>
+
+<!-- ============ PRE-RANKING ============ -->
+<h2 id="preranking"><span class="stage-badge b2">第2段</span> Pre-ranking（粗選別）</h2>
+<div class="lead">
+目的：数百〜数千の候補を、重い Ranking に渡す前に数十〜数百まで素早く足切りする「橋渡し」。
+「Ranking が重すぎて全候補を捌けない」というコスパ問題を解く段。常に必須ではないが大規模本番では一般的。
+</div>
+<div class="tbl"><table>
+<thead><tr><th>観点</th><th>内容</th></tr></thead>
+<tbody>
+<tr><td><strong>ルール / ヒューリスティック</strong></td><td>在庫切れ・既読・年齢/地域/ポリシー制限・NG ワード・スコア閾値などで <em>機械的に</em>除外。</td></tr>
+<tr><td><strong>軽量スコアリングモデル</strong></td><td>GBDT/XGBoost、浅い MLP、あるいは Two-Tower/Three-Tower で粗い関連度を推定。Ranking モデルの蒸留（distillation）版を使うことも多い。</td></tr>
+<tr><td><strong>学習方法</strong></td><td>多くは二値分類（log loss / BCE）やペアワイズ損失で相対順位の質を担保。</td></tr>
+</tbody>
+</table></div>
+<div class="note warn"><div class="ntitle">⚠ 一貫性問題（Consistency）</div>Pre-ranking の役割は「Ranking が高評価する候補を落とさないこと」。よって最適化目標は「絶対精度」より <strong>後段 Ranking との順位の一貫性</strong>。近年は Ranking モデルの出力を教師にした <em>knowledge distillation</em> や、両段の順位整合を測る指標で評価する設計が主流。</div>
+
+<!-- ============ RANKING ============ -->
+<h2 id="ranking"><span class="stage-badge b3">第3段</span> Ranking（精密順位付け）</h2>
+<div class="lead">
+目的：通過した数十〜数百件を、ユーザーの今の状況に合わせて 1 位から超高精度に並び替える。
+最もリッチな特徴量（最新価格・在庫・コンテキスト・1 段目のベクトル類似度・人気度…）と最も複雑なモデルを投入する。
+</div>
+<p class="muted">進化の流れ：手作り交互作用 → 学習された交互作用 → 系列・グラフモデリング → マルチモーダル / 生成的推論。</p>
+
+<!-- LTR -->
+<h3 id="k-ltr">ランク学習（Learning to Rank, LTR）</h3>
+<p>確率の <em>絶対値</em>ではなく「同じ画面（リスト）内での相対的な上下関係」を学習する枠組み。損失の取り方で 3 流派。</p>
+<div class="tbl"><table>
+<thead><tr><th>流派</th><th>考え方</th><th>代表</th></tr></thead>
+<tbody>
+<tr><td><strong>Pointwise</strong></td><td>各アイテムの関連度を独立に回帰/分類</td><td>回帰、ロジスティック回帰</td></tr>
+<tr><td><strong>Pairwise</strong></td><td>2 アイテムの「どちらが上か」を学習</td><td>RankNet, <strong>LambdaRank</strong></td></tr>
+<tr><td><strong>Listwise</strong></td><td>リスト全体の順序を直接最適化</td><td>ListNet, <strong>LambdaMART</strong></td></tr>
+</tbody>
+</table></div>
+<p><strong>LambdaMART</strong>（LightGBM の <code>lambdarank</code>）は実務の定番。NDCG のような微分不可能な順位指標を、ペアの勾配 $\lambda$ に「その入れ替えで NDCG がどれだけ変わるか」$|\Delta\text{NDCG}|$ を掛けて近似する:</p>
+<div class="formula">$$\lambda_{ij}=\frac{-1}{1+e^{\,s_i-s_j}}\,\bigl|\Delta\text{NDCG}_{ij}\bigr|$$</div>
+<div class="note tip"><div class="ntitle">▶ クロス特徴量の再利用</div>1 段目で計算した <strong>コサイン類似度・人気度・共起頻度</strong>などを、ここでは数値特徴量として GBDT に食わせる。「打順（順位）重視」で、グループ（＝1 回の表示リスト）ごとにランク学習するのがポイント。</div>
+
+<!-- Cross -->
+<h3 id="k-cross">クロス特徴モデル（特徴量交互作用の自動学習）</h3>
+<p>「年齢 × カテゴリ」「都市 × 時間帯」のような特徴量の <strong>掛け合わせ（交互作用）</strong>を、人手でなくモデルが学習する。</p>
+<div class="tbl"><table>
+<thead><tr><th>モデル</th><th>仕組み</th></tr></thead>
+<tbody>
+<tr><td><strong>Wide &amp; Deep</strong>(Google)</td><td>暗記担当の線形 Wide 部 ＋ 汎化担当の DNN Deep 部を同時学習。</td></tr>
+<tr><td><strong>DeepFM</strong></td><td>FM（2 次の特徴交差）＋ DNN（高次）を共有埋め込みで結合。手動の特徴エンジニアリング不要。</td></tr>
+<tr><td><strong>DCN / DCN v2</strong></td><td>Cross Network で明示的に「$x_0 x_l^\top w$」と次数を 1 つずつ上げて高次交差を効率的に学習。v2 は低ランク化で実用性↑。</td></tr>
+</tbody>
+</table></div>
+<p>DCN の Cross 層（$l$ 層で $l+1$ 次の交差を生成）:</p>
+<div class="formula">$$x_{l+1}=x_0\odot(W_l x_l + b_l)+x_l$$</div>
+
+<!-- Attention -->
+<h3 id="k-attn">Attention / シーケンスモデル</h3>
+<p>ユーザーの直近の行動列に <strong>Attention</strong> をかけ、「今からスコアリングする候補アイテムに関連の深い過去行動」を動的に重み付けする。Taobao・TikTok のフィードで定番。</p>
+<ul>
+<li><strong>DIN（Deep Interest Network）：</strong> 候補アイテムをクエリに、過去行動への Attention で「ユーザーの興味」を候補ごとに動的表現。固定のユーザーベクトルでは捉えられない「多様な興味」を表現。</li>
+<li><strong>DIEN：</strong> DIN に GRU ベースの <em>興味進化層</em>を追加し、興味の時間変化をモデル化。</li>
+<li><strong>DSIN：</strong> 行動をセッション単位に分割し、セッション内/間の構造を捉える。</li>
+</ul>
+
+<!-- MTL -->
+<h3 id="k-mtl">マルチタスク学習（MTL）— 実務で超重要</h3>
+<p>推薦の目的は単一でない。<strong>CTR（クリック率）・CVR（転換率）・滞在時間・継続率・いいね</strong>…を同時に最適化する。「共有表現＋目的別ヘッド」が基本構造。</p>
+<div class="tbl"><table>
+<thead><tr><th>モデル</th><th>仕組み・狙い</th></tr></thead>
+<tbody>
+<tr><td><strong>MMoE</strong>(Multi-gate Mixture-of-Experts)</td><td>複数の Expert を共有し、タスクごとの Gate が Expert の重みを動的に決定。タスク間の相反（negative transfer）を緩和。</td></tr>
+<tr><td><strong>ESMM</strong></td><td>「CTR」と「CTCVR（クリック→転換）」を同時学習し、<em>CVR のサンプル選択バイアス</em>（クリック後しか転換を観測できない）を構造的に解消。$pCVR = pCTCVR / pCTR$。</td></tr>
+<tr><td><strong>PLE</strong>(Progressive Layered Extraction)</td><td>共有 Expert と <em>タスク専用 Expert</em> を分離し層状に抽出。MMoE の seesaw 現象（一方を上げると他方が下がる）を改善。</td></tr>
+</tbody>
+</table></div>
+<p>最終スコアは各目的の予測を重み付き合成するのが典型（重みはビジネス価値で調整）:</p>
+<div class="formula">$$\text{Score}=pCTR^{\alpha}\cdot pCVR^{\beta}\cdot (\text{price})^{\gamma}\cdot \dots$$</div>
+
+<!-- Transformer -->
+<h3 id="k-trans">Transformer ベース</h3>
+<p>長期の系列依存を捉え、テキスト/動画/画像の <strong>マルチモーダル</strong>特徴も融合する最新潮流。</p>
+<ul>
+<li><strong>Transformer4Rec：</strong> NLP の Transformer 実装（HuggingFace）を系列推薦にブリッジ。</li>
+<li><strong>P5 / UniRec：</strong> 複数の推薦タスクを単一モデルに統合し、自然言語インターフェースで扱う。</li>
+</ul>
+
+<!-- ============ RE-RANKING ============ -->
+<h2 id="reranking"><span class="stage-badge b4">第4段</span> Re-ranking（再順位付け）</h2>
+<div class="lead">
+目的：Ranking の並びを、関連性・多様性・新鮮さ・ビジネス制約のバランスで最終調整してから表示する。
+ここでは「個々のアイテムのスコア」でなく <strong>リスト全体・セッション全体の体験</strong>を最適化する。
+</div>
+<h4>調整したい観点</h4>
+<ul>
+<li><strong>多様性：</strong> 似たアイテムの連続を避ける（アクション映画ばかりにしない）。</li>
+<li><strong>公平性 / 露出制御：</strong> 出品者・クリエイター・カテゴリ間の露出バランス、露出クォータ。</li>
+<li><strong>探索（Exploration）：</strong> ロングテール・新着を混ぜ、将来の学習用フィードバックを収集。</li>
+<li><strong>新鮮さブースト：</strong> 新着・トレンドを一時的に優遇し人気バイアスを是正。</li>
+<li><strong>セッション満足度：</strong> 個別 CTR でなく画面全体・セッション全体を最大化。</li>
+</ul>
+
+<div class="tbl"><table>
+<thead><tr><th>レベル</th><th>手法</th><th>用途</th></tr></thead>
+<tbody>
+<tr><td>ルールベース</td><td>カテゴリ頻度・露出上限など決定論的制約</td><td>安定・解釈性重視で本番多用</td></tr>
+<tr><td>線形/MLP 再スコア</td><td>元スコア＋新規性/位置バイアス特徴で再採点</td><td>効率と効果のバランス、業界の中核</td></tr>
+<tr><td>コンテキストバンディット</td><td>LinUCB, Thompson Sampling, EXP3, Neural Bandits</td><td>活用と探索のバランス（YouTube/TikTok/Taobao）</td></tr>
+<tr><td>多様性後処理</td><td>MMR, DPP（行列式点過程）, MGS</td><td>冗長性除去の高速ポストプロセス</td></tr>
+<tr><td>高度な手法</td><td>Listwise(ListNet), 強化学習(SlateQ, DQN-Rank), GraphRL</td><td>計算コスト高く限定/ハイブリッド導入</td></tr>
+</tbody>
+</table></div>
+
+<!-- Diversity -->
+<h3 id="rr-div">多様性アルゴリズム：MMR と DPP</h3>
+<p><strong>MMR（Maximal Marginal Relevance）：</strong> 「関連性」と「既選択集合との非類似性」を $\lambda$ で線形にトレードオフし、貪欲に 1 件ずつ選ぶ:</p>
+<div class="formula">$$\text{MMR}=\arg\max_{i\in R\setminus S}\Bigl[\lambda\,\text{rel}(i)-(1-\lambda)\max_{j\in S}\text{sim}(i,j)\Bigr]$$</div>
+<p><strong>DPP（行列式点過程）：</strong> 部分集合 $S$ の選ばれやすさをカーネル行列 $L$ の <strong>行列式</strong> $\det(L_S)$ に比例させる。行列式は「ベクトルが張る体積」＝多様性を自然に表現するため、関連性と多様性を確率的に統合できる。</p>
+<div class="formula">$$P(S)\propto \det(L_S)$$</div>
+
+<!-- Bandit -->
+<h3 id="rr-bandit">コンテキストバンディット（探索と活用）</h3>
+<p>「今わかっている最善（活用）」だけ出すと、新着やニッチが永遠に評価されず学習が止まる。少しだけ「未知への賭け（探索）」を混ぜる枠組み。</p>
+<ul>
+<li><strong>LinUCB：</strong> 各アイテムの報酬期待値の <em>信頼区間上限</em>が高いものを選ぶ（不確実なものほどボーナス）。</li>
+<li><strong>Thompson Sampling：</strong> 報酬分布の事後分布からサンプリングし、サンプル値が最大のものを選ぶ。実装がシンプルで強力。</li>
+</ul>
+<p>LinUCB の選択基準（$\hat\theta$ は推定係数、第 2 項が探索ボーナス）:</p>
+<div class="formula">$$a_t=\arg\max_a\Bigl(x_a^\top\hat\theta_a+\alpha\sqrt{x_a^\top A_a^{-1}x_a}\Bigr)$$</div>
+
+<!-- ============ INFRA ============ -->
+<h2 id="infra">パイプラインを支える基盤技術スタック</h2>
+<div class="grid2">
+  <div class="mini"><h5>ANN 検索エンジン</h5><p>FAISS / ScaNN / Milvus / Vespa。HNSW・IVF・PQ・BBQ で億規模ベクトルをミリ秒検索。</p></div>
+  <div class="mini"><h5>Feature Store</h5><p>Feast / Tecton 等。オンライン（低レイテンシ）/ オフライン（学習用）で同じ特徴量を提供し <em>train-serve skew</em> を防ぐ。</p></div>
+  <div class="mini"><h5>ストリーミング基盤</h5><p>Kafka / Flink。クリック等の行動をリアルタイムに特徴量へ反映し「直近の興味」を即座に推薦へ。</p></div>
+  <div class="mini"><h5>実験 / 評価</h5><p>オフライン（NDCG/Recall@K/AUC）＋ オンライン A/B テスト。Interleaving で高速比較も。</p></div>
+</div>
+<div class="note warn"><div class="ntitle">⚠ 全段に共通する難所</div>
+<strong>① フィードバックループ：</strong>推薦した結果しかログに残らず、モデルが自分の推薦を強化し続ける。<br>
+<strong>② 各段の選択バイアス：</strong>後段は前段を通過した候補しか学習で見ない。<br>
+<strong>③ 遅延フィードバック：</strong>転換（購入）はクリックの数日後に起きることがあり、ラベルが遅れて確定する。
+</div>
+
+<!-- ============ FUTURE ============ -->
+<h2 id="future">これからの方向性（次世代）</h2>
+<div class="grid2">
+  <div class="mini"><h5>Unified（統合）</h5><p>Retrieval・Ranking・生成を単一の LLM フレームワークに統合。段の境界が溶ける。</p></div>
+  <div class="mini"><h5>Multimodal</h5><p>テキスト・画像・動画・音声を横断的に理解し、コンテンツの「中身」で勝負。</p></div>
+  <div class="mini"><h5>Generative</h5><p>既存アイテムを「選ぶ」のでなく、パーソナライズされたアイテム/レイアウトを「生成」する。</p></div>
+  <div class="mini"><h5>Privacy-aware</h5><p>連合学習・オンデバイス学習と LLM 推論の組み合わせで、データを集めずに個別化。</p></div>
+</div>
+
+<hr>
+<h2 style="border:none;">差分サマリ（元の 2 段整理からの拡充点）</h2>
+<ul>
+<li><strong>段の追加：</strong>Pre-ranking と Re-ranking を独立した段として明示（実際の本番は 3〜4 段ファネル）。</li>
+<li><strong>Retrieval の方式追加：</strong>グラフ（LightGCN/PinSage）、シーケンシャル（SASRec/BERT4Rec/PinnerFormer）、生成型（TIGER/P5・Semantic ID）。</li>
+<li><strong>マルチチャネル化：</strong>単一モデルでなく複数チャネル併用が業界標準である点を明記。</li>
+<li><strong>Ranking の方式追加：</strong>クロス特徴（Wide&amp;Deep/DeepFM/DCN）、Attention/系列（DIN/DIEN/DSIN）、マルチタスク（MMoE/ESMM/PLE）、Transformer 系。</li>
+<li><strong>基盤技術：</strong>ANN 検索、Feature Store、ストリーミング基盤への言及。</li>
+</ul>
+
+<footer>
+現代のリコメンドシステム多段ファネル構成 技術解説 ／ 生成日 2026-05-26<br>
+数式表示は MathJax を使用。各段の役割は「前段ほど速度と再現率、後段ほど精度と体験最適化」という一貫した設計思想で貫かれている。
+</footer>
+</main>
+</div>
+</body>
+</html>

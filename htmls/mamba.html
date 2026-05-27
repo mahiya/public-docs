@@ -1,0 +1,2242 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mamba / Jamba / Samba / Hymba — 技術解説インフォグラフィック統合版</title>
+<style>
+  :root{
+    --bg:#070a12; --bar:#0d1322; --bar2:#141d33;
+    --border:#26334f; --border2:#36486e;
+    --text:#e7ecf7; --muted:#9aa9c9; --dim:#6b7a9c;
+    --mamba:#3dd7c6; --jamba:#a78bfa; --samba:#38bdf8; --hymba:#34d399;
+    --grad:linear-gradient(120deg,#3dd7c6 0%,#38bdf8 38%,#a78bfa 72%,#34d399 100%);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{
+    background:var(--bg); color:var(--text);
+    font-family:'Segoe UI','Hiragino Kaku Gothic ProN','Yu Gothic UI',Meiryo,system-ui,sans-serif;
+    display:flex; flex-direction:column; overflow:hidden;
+  }
+
+  /* ===== トップバー ===== */
+  header.topbar{
+    flex:none; background:rgba(13,19,34,.92); backdrop-filter:blur(12px);
+    border-bottom:1px solid var(--border); padding:10px 20px 0;
+  }
+  .ttl{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;margin-bottom:10px}
+  .ttl h1{font-size:1.05rem;font-weight:850;letter-spacing:.3px}
+  .ttl h1 span{background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
+  .ttl .note{font-size:.78rem;color:var(--dim)}
+
+  .tabs{display:flex;gap:8px;flex-wrap:wrap}
+  .tab{
+    display:flex;align-items:center;gap:10px;cursor:pointer;
+    background:var(--bar2);border:1px solid var(--border);
+    border-bottom:none;border-radius:12px 12px 0 0;
+    padding:10px 18px;color:var(--muted);font:inherit;transition:.16s;
+    position:relative;top:1px;
+  }
+  .tab:hover{color:var(--text);background:#1a2542}
+  .tab .ic{font-size:1.5rem;line-height:1;filter:saturate(1.1)}
+  .tab .tx{display:flex;flex-direction:column;text-align:left;line-height:1.25}
+  .tab .tx b{font-size:1.0rem;font-weight:800;letter-spacing:.3px}
+  .tab .tx small{font-size:.68rem;color:var(--dim)}
+
+  .tab.active{color:var(--text);background:var(--bg);border-color:var(--border2)}
+  .tab.active::after{
+    content:"";position:absolute;left:0;right:0;top:0;height:3px;border-radius:3px;
+  }
+  .tab[data-target="mamba"].active::after{background:var(--mamba)}
+  .tab[data-target="jamba"].active::after{background:var(--jamba)}
+  .tab[data-target="samba"].active::after{background:var(--samba)}
+  .tab[data-target="hymba"].active::after{background:var(--hymba)}
+  .tab[data-target="mamba"].active .tx b{color:var(--mamba)}
+  .tab[data-target="jamba"].active .tx b{color:var(--jamba)}
+  .tab[data-target="samba"].active .tx b{color:var(--samba)}
+  .tab[data-target="hymba"].active .tx b{color:var(--hymba)}
+
+  /* ===== ビューポート ===== */
+  .stage{flex:1;position:relative;min-height:0}
+  .frame{
+    position:absolute;inset:0;width:100%;height:100%;border:0;
+    background:var(--bg);display:none;
+  }
+  .frame.show{display:block}
+
+  @media(max-width:680px){
+    .tab .tx small{display:none}
+    .tab{padding:9px 13px}
+    .ttl h1{font-size:.92rem}
+  }
+</style>
+</head>
+<body>
+  <header class="topbar">
+    <div class="ttl">
+      <h1><span>状態空間ハイブリッド系</span> 技術解説インフォグラフィック</h1>
+      <span class="note">Mamba → Jamba → Samba → Hymba ／ タブで切り替え</span>
+    </div>
+    <nav class="tabs">
+      <button class="tab active" data-target="mamba"><span class="ic">🐍</span><span class="tx"><b>Mamba</b><small>Selective State Space Models</small></span></button>
+      <button class="tab" data-target="jamba"><span class="ic">🟣</span><span class="tx"><b>Jamba</b><small>Attention-Mamba-MoE Hybrid</small></span></button>
+      <button class="tab" data-target="samba"><span class="ic">🩵</span><span class="tx"><b>Samba</b><small>Mamba + Sliding Window Attention</small></span></button>
+      <button class="tab" data-target="hymba"><span class="ic">💚</span><span class="tx"><b>Hymba</b><small>Hybrid-head Architecture</small></span></button>
+    </nav>
+  </header>
+
+  <main class="stage">
+    <iframe class="frame show" id="f-mamba" title="Mamba インフォグラフィック" loading="eager" srcdoc="<!DOCTYPE html>
+<html lang=&quot;ja&quot;>
+<head>
+<meta charset=&quot;UTF-8&quot;>
+<meta name=&quot;viewport&quot; content=&quot;width=device-width, initial-scale=1.0&quot;>
+<title>Mamba 技術解説インフォグラフィック — Selective State Space Models</title>
+<style>
+  :root{
+    --bg:#080b14;
+    --bg2:#0f1524;
+    --card:#121a2e;
+    --card2:#172138;
+    --elev:#1d2a47;
+    --border:#283656;
+    --border2:#34466c;
+    --text:#e7ecf7;
+    --muted:#97a6c7;
+    --dim:#6b7a9c;
+    --teal:#3dd7c6;
+    --cyan:#38bdf8;
+    --purple:#a78bfa;
+    --pink:#f472b6;
+    --amber:#fbbf24;
+    --green:#34d399;
+    --red:#fb7185;
+    --grad:linear-gradient(120deg,#3dd7c6 0%,#38bdf8 40%,#a78bfa 75%,#f472b6 100%);
+    --grad2:linear-gradient(120deg,#3dd7c6,#a78bfa);
+    --mono:'SFMono-Regular',Consolas,'Liberation Mono',Menlo,monospace;
+    --math:'Cambria Math','Latin Modern Math',Cambria,Georgia,serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{scroll-behavior:smooth;scroll-padding-top:70px}
+  body{
+    background:var(--bg);
+    color:var(--text);
+    font-family:'Segoe UI','Hiragino Kaku Gothic ProN','Yu Gothic UI',Meiryo,system-ui,sans-serif;
+    line-height:1.75;
+    font-size:16px;
+    -webkit-font-smoothing:antialiased;
+    overflow-x:hidden;
+  }
+  body::before{
+    content:&quot;&quot;;position:fixed;inset:0;z-index:-2;
+    background:
+      radial-gradient(ellipse 80% 50% at 15% -5%,rgba(61,215,198,.10),transparent 60%),
+      radial-gradient(ellipse 70% 50% at 90% 5%,rgba(167,139,250,.12),transparent 60%),
+      radial-gradient(ellipse 90% 60% at 50% 110%,rgba(244,114,182,.07),transparent 60%);
+  }
+  body::after{
+    content:&quot;&quot;;position:fixed;inset:0;z-index:-1;opacity:.5;
+    background-image:radial-gradient(rgba(120,140,180,.06) 1px,transparent 1px);
+    background-size:38px 38px;
+  }
+  a{color:var(--cyan);text-decoration:none}
+  a:hover{text-decoration:underline}
+
+  /* progress + nav */
+  #progress{position:fixed;top:0;left:0;height:3px;width:0;z-index:100;background:var(--grad);box-shadow:0 0 12px rgba(61,215,198,.6)}
+  nav{position:sticky;top:0;z-index:90;backdrop-filter:blur(12px);background:rgba(8,11,20,.78);border-bottom:1px solid var(--border)}
+  nav .navin{max-width:1180px;margin:0 auto;display:flex;align-items:center;gap:6px;padding:10px 22px;flex-wrap:wrap}
+  nav .brand{font-weight:800;letter-spacing:.5px;margin-right:auto;font-size:1.05rem;display:flex;align-items:center;gap:8px}
+  nav .brand b{background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
+  nav a{color:var(--muted);font-size:.82rem;padding:6px 11px;border-radius:8px;font-weight:600;transition:.18s;white-space:nowrap}
+  nav a:hover{color:var(--text);background:var(--card2);text-decoration:none}
+  nav a.active{color:#07101e;background:var(--grad2)}
+
+  .wrap{max-width:1180px;margin:0 auto;padding:0 22px}
+  section{padding:64px 0;border-bottom:1px solid rgba(40,54,86,.5)}
+
+  /* hero */
+  .hero{padding:84px 0 64px;text-align:center;position:relative}
+  .snake{font-size:3.2rem;filter:drop-shadow(0 0 22px rgba(61,215,198,.5));animation:float 5s ease-in-out infinite}
+  @keyframes float{50%{transform:translateY(-10px)}}
+  .hero h1{font-size:clamp(2.6rem,7vw,5rem);font-weight:900;letter-spacing:-1px;line-height:1.02;margin:14px 0 6px}
+  .hero h1 span{background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
+  .hero .sub{font-size:clamp(1rem,2.4vw,1.4rem);color:var(--muted);font-weight:500;margin-bottom:8px}
+  .hero .paper{display:inline-flex;gap:10px;align-items:center;flex-wrap:wrap;justify-content:center;margin-top:18px;color:var(--dim);font-size:.9rem}
+  .hero .paper .pill{background:var(--card);border:1px solid var(--border);border-radius:999px;padding:5px 14px;color:var(--muted)}
+  .thesis{max-width:820px;margin:30px auto 0;font-size:1.18rem;line-height:1.85;color:var(--text);
+    background:linear-gradient(135deg,rgba(61,215,198,.07),rgba(167,139,250,.07));
+    border:1px solid var(--border);border-left:4px solid var(--teal);border-radius:14px;padding:22px 26px}
+  .thesis b{background:var(--grad2);-webkit-background-clip:text;background-clip:text;color:transparent;font-weight:800}
+
+  .heroStats{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;max-width:880px;margin:34px auto 0}
+  .heroStats .s{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:18px 10px}
+  .heroStats .n{font-size:1.9rem;font-weight:900;background:var(--grad2);-webkit-background-clip:text;background-clip:text;color:transparent;line-height:1}
+  .heroStats .l{font-size:.74rem;color:var(--muted);margin-top:7px;letter-spacing:.3px}
+
+  /* section heads */
+  .shead{display:flex;align-items:flex-start;gap:18px;margin-bottom:34px}
+  .snum{flex:none;width:60px;height:60px;border-radius:16px;display:grid;place-items:center;font-size:1.5rem;font-weight:900;
+    background:linear-gradient(135deg,rgba(61,215,198,.16),rgba(167,139,250,.16));border:1px solid var(--border2);color:var(--teal);
+    font-family:var(--mono)}
+  .shead h2{font-size:clamp(1.6rem,3.6vw,2.4rem);font-weight:850;letter-spacing:-.5px;line-height:1.12}
+  .shead .en{color:var(--dim);font-size:.85rem;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;display:block;margin-bottom:3px}
+  .shead p{color:var(--muted);margin-top:8px;max-width:760px}
+
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+  .grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}
+  .grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
+
+  .card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:24px;transition:transform .2s,border-color .2s,box-shadow .2s}
+  .card:hover{transform:translateY(-4px);border-color:var(--border2);box-shadow:0 14px 40px rgba(0,0,0,.35)}
+  .card h3{font-size:1.18rem;font-weight:750;margin-bottom:10px;display:flex;align-items:center;gap:10px}
+  .card h3 .ic{font-size:1.35rem}
+  .card p{color:var(--muted);font-size:.94rem}
+  .card ul{list-style:none;margin-top:10px}
+  .card ul li{color:var(--muted);font-size:.92rem;padding:5px 0 5px 22px;position:relative}
+  .card ul li::before{content:&quot;▹&quot;;position:absolute;left:0;color:var(--teal)}
+
+  .tag{display:inline-block;font-family:var(--mono);font-size:.72rem;padding:2px 9px;border-radius:6px;background:var(--elev);border:1px solid var(--border2);color:var(--cyan);font-weight:600}
+  .tagp{color:var(--purple)} .tagk{color:var(--pink)} .taga{color:var(--amber)} .tagg{color:var(--green)}
+
+  /* before mamba tension */
+  .tension{display:grid;grid-template-columns:1fr 64px 1fr;gap:0;align-items:stretch;margin-bottom:8px}
+  .tcol{padding:26px;border-radius:16px;border:1px solid var(--border)}
+  .tcol.t-eff{background:linear-gradient(160deg,rgba(56,189,248,.10),rgba(56,189,248,.02));border-color:rgba(56,189,248,.32)}
+  .tcol.t-ssm{background:linear-gradient(160deg,rgba(167,139,250,.10),rgba(167,139,250,.02));border-color:rgba(167,139,250,.32)}
+  .tcol .ttl{font-weight:800;font-size:1.15rem;margin-bottom:3px}
+  .tcol .vs{font-size:.78rem;letter-spacing:1px;text-transform:uppercase;font-weight:700;margin-bottom:14px}
+  .t-eff .vs{color:var(--cyan)} .t-ssm .vs{color:var(--purple)}
+  .tmid{display:grid;place-items:center}
+  .tmid .vsbadge{width:54px;height:54px;border-radius:50%;display:grid;place-items:center;font-weight:900;font-size:1rem;background:var(--bg2);border:2px solid var(--border2);color:var(--amber)}
+  .tcol .row{display:flex;gap:9px;padding:7px 0;font-size:.9rem;color:var(--muted);align-items:flex-start}
+  .tcol .row b{color:var(--text);font-weight:700}
+  .tcol .ico{flex:none;width:20px;text-align:center}
+  .good{color:var(--green)} .bad{color:var(--red)}
+
+  .axisnote{margin-top:18px;padding:18px 22px;border-radius:14px;background:var(--card2);border:1px dashed var(--border2);font-size:.97rem;color:var(--muted)}
+  .axisnote b{color:var(--amber)}
+
+  .tasks{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-top:22px}
+  .task{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:20px;position:relative;overflow:hidden}
+  .task .qn{font-weight:800;font-size:1.05rem;margin-bottom:6px}
+  .task .desc{color:var(--muted);font-size:.9rem;margin-bottom:14px}
+  .bar{display:flex;align-items:center;gap:10px;margin:7px 0;font-family:var(--mono);font-size:.84rem}
+  .bar .lab{width:108px;flex:none;color:var(--muted)}
+  .bar .track{flex:1;height:22px;background:var(--bg2);border-radius:7px;overflow:hidden;border:1px solid var(--border)}
+  .bar .fill{height:100%;border-radius:6px;display:flex;align-items:center;justify-content:flex-end;padding-right:8px;font-weight:700;color:#06121f;font-size:.78rem}
+  .fill.lo{background:linear-gradient(90deg,#7c2d3a,#fb7185)}
+  .fill.hi{background:linear-gradient(90deg,#0e7c6e,#3dd7c6)}
+
+  /* enable stats */
+  .bigstats{display:grid;grid-template-columns:repeat(4,1fr);gap:18px;margin-bottom:26px}
+  .bs{background:linear-gradient(160deg,var(--card2),var(--card));border:1px solid var(--border);border-radius:16px;padding:24px 20px;position:relative;overflow:hidden}
+  .bs::before{content:&quot;&quot;;position:absolute;top:-30px;right:-30px;width:90px;height:90px;border-radius:50%;background:var(--grad2);opacity:.10;filter:blur(6px)}
+  .bs .n{font-size:2.5rem;font-weight:900;line-height:1;background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
+  .bs .u{font-size:1rem;font-weight:700;color:var(--muted)}
+  .bs .l{margin-top:9px;font-size:.86rem;color:var(--muted)}
+  .bs .l b{color:var(--text)}
+
+  .domains{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin-top:6px}
+  .dom{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:22px}
+  .dom .ic{font-size:2rem}
+  .dom h4{margin:8px 0 4px;font-size:1.1rem}
+  .dom .res{font-family:var(--mono);font-size:.84rem;color:var(--teal);background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:8px 11px;margin-top:10px;line-height:1.5}
+  .dom p{color:var(--muted);font-size:.88rem}
+
+  /* timeline */
+  .tlwrap{position:relative;margin-top:10px}
+  .tracks{display:flex;justify-content:center;gap:14px;margin-bottom:22px;flex-wrap:wrap}
+  .trackkey{display:flex;align-items:center;gap:8px;font-size:.84rem;color:var(--muted);background:var(--card);border:1px solid var(--border);padding:6px 13px;border-radius:999px}
+  .dotA{width:11px;height:11px;border-radius:50%;background:var(--teal)}
+  .dotB{width:11px;height:11px;border-radius:50%;background:var(--purple)}
+  .tlrow{display:grid;grid-template-columns:64px 1fr 1fr;gap:14px;align-items:stretch;position:relative;padding:7px 0}
+  .yr{display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-weight:800;font-size:.95rem;color:var(--amber);
+     background:var(--card2);border:1px solid var(--border2);border-radius:10px}
+  .tcell{display:flex;flex-direction:column;gap:10px}
+  .tnode{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:13px 15px;transition:.18s}
+  .tnode:hover{transform:translateX(4px);border-color:var(--border2)}
+  .tnode.a{border-left:3px solid var(--teal)} .tnode.b{border-left:3px solid var(--purple)}
+  .tnode .nm{font-weight:750;font-size:.98rem;display:flex;justify-content:space-between;gap:8px;align-items:baseline;flex-wrap:wrap}
+  .tnode .nm .y{font-family:var(--mono);font-size:.68rem;color:var(--dim)}
+  .tnode .ds{color:var(--muted);font-size:.84rem;margin-top:3px}
+  .converge{margin-top:14px;background:linear-gradient(120deg,rgba(61,215,198,.14),rgba(167,139,250,.14),rgba(244,114,182,.14));
+    border:1px solid var(--border2);border-radius:16px;padding:22px 26px;text-align:center}
+  .converge .big{font-size:1.7rem;font-weight:900;background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
+  .converge p{color:var(--muted);margin-top:6px;max-width:760px;margin-inline:auto;font-size:.95rem}
+  .arrowdown{text-align:center;font-size:1.6rem;color:var(--border2);margin:2px 0}
+
+  /* algorithm */
+  .step{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:26px;margin-bottom:20px;position:relative}
+  .step .sk{position:absolute;top:-12px;left:22px;font-family:var(--mono);font-size:.74rem;font-weight:700;color:#06121f;background:var(--grad2);padding:4px 12px;border-radius:7px}
+  .step h3{font-size:1.32rem;font-weight:800;margin:6px 0 12px}
+  .step h3 .em{background:var(--grad2);-webkit-background-clip:text;background-clip:text;color:transparent}
+  .step p{color:var(--muted)}
+  .step p b{color:var(--text)}
+
+  .eq{font-family:var(--math);background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:18px 22px;margin:14px 0;font-size:1.18rem;text-align:center;overflow-x:auto;line-height:2.2}
+  .eq i{font-style:italic;color:var(--cyan)}
+  .eq .op{color:var(--muted)}
+  .eq .ovl{text-decoration:overline;text-underline-offset:2px}
+  .eq small{font-size:.72em;color:var(--muted);display:block;font-family:var(--mono);margin-top:6px}
+  .eqlabel{font-size:.78rem;color:var(--dim);font-family:var(--mono)}
+
+  .params{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:14px 0}
+  .param{background:var(--bg2);border:1px solid var(--border);border-radius:11px;padding:13px;text-align:center}
+  .param .v{font-family:var(--math);font-style:italic;font-size:1.5rem;font-weight:700;color:var(--teal)}
+  .param .nm{font-size:.78rem;color:var(--muted);margin-top:3px}
+
+  .dual{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:8px}
+  .dualbox{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:18px}
+  .dualbox .h{font-weight:750;margin-bottom:4px;display:flex;align-items:center;gap:8px}
+  .dualbox.rec .h{color:var(--teal)} .dualbox.conv .h{color:var(--purple)}
+  .dualbox .meta{font-size:.78rem;color:var(--dim);margin-bottom:8px}
+
+  /* selection table */
+  table{width:100%;border-collapse:collapse;margin:14px 0;font-size:.92rem;overflow:hidden;border-radius:12px}
+  table th,table td{padding:11px 14px;text-align:left;border-bottom:1px solid var(--border)}
+  table thead th{background:var(--card2);font-size:.8rem;letter-spacing:.4px;color:var(--muted);text-transform:uppercase}
+  table tbody tr{background:var(--bg2)}
+  table tbody tr:hover{background:var(--card2)}
+  table td .mono{font-family:var(--mono);font-size:.85rem}
+  .yes{color:var(--green);font-weight:700} .no{color:var(--dim)}
+  .hl-row{background:rgba(61,215,198,.06)!important}
+
+  .focusbox{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:14px}
+  .fb{border-radius:12px;padding:18px;border:1px solid var(--border)}
+  .fb.big{background:linear-gradient(160deg,rgba(251,191,36,.10),transparent);border-color:rgba(251,191,36,.3)}
+  .fb.small{background:linear-gradient(160deg,rgba(56,189,248,.10),transparent);border-color:rgba(56,189,248,.3)}
+  .fb .d{font-family:var(--math);font-size:1.4rem;font-weight:800;font-style:italic}
+  .fb.big .d{color:var(--amber)} .fb.small .d{color:var(--cyan)}
+  .fb .t{font-weight:700;margin:4px 0}
+  .fb p{font-size:.86rem;color:var(--muted)}
+
+  /* hardware diagram */
+  .hw{display:grid;grid-template-columns:1fr 56px 1fr;gap:0;align-items:center;margin:16px 0}
+  .mem{border-radius:14px;padding:20px;text-align:center;border:1px solid var(--border)}
+  .mem.hbm{background:linear-gradient(160deg,rgba(251,113,133,.08),transparent);border-color:rgba(251,113,133,.3)}
+  .mem.sram{background:linear-gradient(160deg,rgba(61,215,198,.10),transparent);border-color:rgba(61,215,198,.35)}
+  .mem .mt{font-weight:800;font-size:1.05rem}
+  .mem .ms{font-size:.78rem;color:var(--muted);margin:2px 0 10px}
+  .mem .it{font-family:var(--mono);font-size:.76rem;color:var(--muted);background:var(--bg2);border:1px solid var(--border);border-radius:7px;padding:5px 8px;margin:5px 0}
+  .hbm .it{border-color:rgba(251,113,133,.2)}
+  .sram .it{border-color:rgba(61,215,198,.2);color:var(--teal)}
+  .hwarrows{display:grid;place-items:center;gap:8px;color:var(--dim);font-size:1.3rem}
+  .hwnote{font-size:.84rem;color:var(--muted);text-align:center;margin-top:6px}
+
+  /* mamba block */
+  .block{display:flex;flex-direction:column;align-items:center;gap:0;margin:8px auto;max-width:520px}
+  .bnode{width:100%;text-align:center;padding:12px 14px;border-radius:11px;font-weight:650;font-size:.92rem;border:1px solid var(--border)}
+  .bnode.io{background:var(--card2);color:var(--muted);font-family:var(--mono);font-size:.82rem}
+  .bnode.proj{background:linear-gradient(90deg,rgba(56,189,248,.12),rgba(56,189,248,.04));border-color:rgba(56,189,248,.3)}
+  .bnode.ssm{background:linear-gradient(90deg,rgba(61,215,198,.16),rgba(61,215,198,.05));border-color:rgba(61,215,198,.4);font-weight:800;color:var(--teal)}
+  .bnode.act{background:rgba(167,139,250,.10);border-color:rgba(167,139,250,.3);font-size:.84rem}
+  .barrow{color:var(--border2);font-size:1.2rem;line-height:1.3}
+  .branches{display:flex;gap:14px;width:100%}
+  .branch{flex:1;display:flex;flex-direction:column;align-items:center;gap:6px;background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:12px 10px}
+  .branch .bl{font-size:.72rem;color:var(--dim);font-family:var(--mono);letter-spacing:.5px}
+  .gate{font-size:1.5rem;color:var(--amber);font-weight:900}
+  .blocknote{font-size:.84rem;color:var(--muted);margin-top:14px;background:var(--card2);border:1px solid var(--border);border-radius:11px;padding:14px 16px}
+  .blocknote b{color:var(--text)}
+  .eqsplit{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+
+  /* next keywords */
+  .feature{background:linear-gradient(120deg,rgba(61,215,198,.12),rgba(167,139,250,.10));border:1px solid var(--border2);border-radius:18px;padding:28px;margin-bottom:22px}
+  .feature .ft{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:8px}
+  .feature h3{font-size:1.5rem;font-weight:850}
+  .feature .star{background:var(--amber);color:#1a1300;font-size:.7rem;font-weight:800;padding:3px 10px;border-radius:999px;letter-spacing:.5px}
+  .feature p{color:var(--muted);font-size:.96rem}
+  .feature .pts{display:grid;grid-template-columns:1fr 1fr;gap:10px 22px;margin-top:14px}
+  .feature .pts div{font-size:.9rem;color:var(--muted);padding-left:20px;position:relative}
+  .feature .pts div::before{content:&quot;◆&quot;;position:absolute;left:0;color:var(--teal);font-size:.7rem;top:5px}
+  .feature .pts b{color:var(--text)}
+
+  .kwgrid{display:grid;grid-template-columns:repeat(2,1fr);gap:18px}
+  .kwcat{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:22px}
+  .kwcat .ch{font-weight:800;font-size:1.12rem;margin-bottom:4px;display:flex;align-items:center;gap:9px}
+  .kwcat .csub{color:var(--dim);font-size:.82rem;margin-bottom:14px}
+  .kwitem{display:flex;gap:11px;padding:9px 0;border-top:1px solid var(--border);align-items:baseline}
+  .kwitem:first-of-type{border-top:none}
+  .kwitem .knm{font-weight:700;font-size:.94rem;min-width:118px;flex:none}
+  .kwitem .kds{color:var(--muted);font-size:.85rem}
+  .kwitem .kid{font-family:var(--mono);font-size:.7rem;color:var(--dim);display:block;margin-top:2px}
+
+  .openprob{background:linear-gradient(160deg,rgba(251,113,133,.08),transparent);border:1px solid rgba(251,113,133,.3);border-radius:16px;padding:24px;margin-top:22px}
+  .openprob h3{color:var(--red);font-size:1.25rem;margin-bottom:6px;display:flex;align-items:center;gap:9px}
+  .openprob .pp{margin-top:14px}
+  .openprob .pp .q{font-weight:750;color:var(--text);font-size:.96rem}
+  .openprob .pp .a{color:var(--muted);font-size:.88rem;margin:4px 0 0}
+
+  footer{padding:50px 22px 70px;text-align:center;color:var(--dim);font-size:.85rem;max-width:980px;margin:0 auto}
+  footer .refs{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin:16px 0}
+  footer .refs a{font-family:var(--mono);font-size:.74rem;background:var(--card);border:1px solid var(--border);padding:4px 10px;border-radius:7px;color:var(--muted)}
+  footer .refs a:hover{border-color:var(--border2);color:var(--cyan);text-decoration:none}
+
+  .reveal{}
+  body.js .reveal{opacity:0;transform:translateY(26px);transition:opacity .6s ease,transform .6s ease}
+  body.js .reveal.in{opacity:1;transform:none}
+
+  @media(max-width:860px){
+    .grid2,.grid3,.grid4,.heroStats,.bigstats,.tasks,.domains,.dual,.params,.focusbox,.eqsplit,.kwgrid,.feature .pts,.tracks{grid-template-columns:1fr}
+    .heroStats{grid-template-columns:1fr 1fr}.bigstats{grid-template-columns:1fr 1fr}.params{grid-template-columns:1fr 1fr}
+    .tension{grid-template-columns:1fr}.tmid{padding:10px 0}
+    .tlrow{grid-template-columns:48px 1fr}.tlrow .tcell.bcol{grid-column:2}
+    .hw{grid-template-columns:1fr}.hwarrows{transform:rotate(90deg);padding:10px 0}
+    nav .navin{padding:8px 14px}.wrap{padding:0 15px}
+  }
+</style>
+</head>
+<body>
+<div id=&quot;progress&quot;></div>
+
+<nav>
+  <div class=&quot;navin&quot;>
+    <div class=&quot;brand&quot;>🐍 <b>Mamba</b></div>
+    <a href=&quot;#s1&quot;>課題</a>
+    <a href=&quot;#s2&quot;>実現できること</a>
+    <a href=&quot;#s3&quot;>関連研究</a>
+    <a href=&quot;#s4&quot;>アルゴリズム</a>
+    <a href=&quot;#s5&quot;>次のキーワード</a>
+  </div>
+</nav>
+
+<!-- HERO -->
+<header class=&quot;hero wrap&quot;>
+  <div class=&quot;snake&quot;>🐍</div>
+  <h1>Mamba <span>:</span><br><span>Selective State Space Models</span></h1>
+  <div class=&quot;sub&quot;>線形時間で動く、選択的状態空間モデルの技術解説</div>
+  <div class=&quot;paper&quot;>
+    <span class=&quot;pill&quot;>Albert Gu &amp;amp; Tri Dao</span>
+    <span class=&quot;pill&quot;>arXiv:2312.00752</span>
+    <span class=&quot;pill&quot;>2023年12月</span>
+    <span class=&quot;pill&quot;>CMU / Princeton</span>
+  </div>
+
+  <div class=&quot;thesis&quot;>
+    Transformer は「文脈を全く圧縮しない」から強く、しかし重い。SSM/RNN は「全部を固定状態に圧縮する」から軽いが、内容を見分けられない。
+    Mamba のたった一つの発明は <b>「選択 (Selection)」</b> ── 状態空間モデルのパラメータを入力依存にすることで、軽い固定サイズ状態に <b>内容を見分ける圧縮ポリシー</b> を持たせ、効率と性能のトレードオフを破った。
+  </div>
+
+  <div class=&quot;heroStats reveal&quot;>
+    <div class=&quot;s&quot;><div class=&quot;n&quot;>O(N)</div><div class=&quot;l&quot;>系列長に対し線形時間</div></div>
+    <div class=&quot;s&quot;><div class=&quot;n&quot;>5×</div><div class=&quot;l&quot;>Transformer比の推論スループット</div></div>
+    <div class=&quot;s&quot;><div class=&quot;n&quot;>100万</div><div class=&quot;l&quot;>トークンの系列長に対応</div></div>
+    <div class=&quot;s&quot;><div class=&quot;n&quot;>0</div><div class=&quot;l&quot;>KVキャッシュ（定数メモリ推論）</div></div>
+  </div>
+</header>
+
+<!-- SECTION 1 -->
+<section id=&quot;s1&quot; class=&quot;wrap&quot;>
+  <div class=&quot;shead reveal&quot;>
+    <div class=&quot;snum&quot;>01</div>
+    <div>
+      <span class=&quot;en&quot;>Before Mamba</span>
+      <h2>Mamba 登場前の課題</h2>
+      <p>すべての系列モデルは「文脈をどう状態に圧縮するか」で性能と効率が決まる。Mamba 以前は、その圧縮の仕方に根本的なジレンマがあった。</p>
+    </div>
+  </div>
+
+  <div class=&quot;tension reveal&quot;>
+    <div class=&quot;tcol t-eff&quot;>
+      <div class=&quot;vs&quot;>効果的 / 非効率</div>
+      <div class=&quot;ttl&quot;>⚡ Transformer（自己注意）</div>
+      <div class=&quot;row&quot;><span class=&quot;ico good&quot;>✓</span><span><b>文脈を一切圧縮しない</b>ので、過去の全トークンを完全に参照できる（完璧な想起）</span></div>
+      <div class=&quot;row&quot;><span class=&quot;ico bad&quot;>✕</span><span>学習は系列長 N に対し <b>O(N²)</b> の計算・メモリ</span></div>
+      <div class=&quot;row&quot;><span class=&quot;ico bad&quot;>✕</span><span>推論時は <b>KVキャッシュが線形に膨張</b>し、生成が遅く・重い</span></div>
+      <div class=&quot;row&quot;><span class=&quot;ico bad&quot;>✕</span><span>有限の窓の外をモデル化できない</span></div>
+    </div>
+    <div class=&quot;tmid&quot;><div class=&quot;vsbadge&quot;>VS</div></div>
+    <div class=&quot;tcol t-ssm&quot;>
+      <div class=&quot;vs&quot;>効率的 / 限定的</div>
+      <div class=&quot;ttl&quot;>🧠 RNN / SSM（S4 など）</div>
+      <div class=&quot;row&quot;><span class=&quot;ico good&quot;>✓</span><span>すべてを<b>固定サイズの状態</b>に圧縮 → 推論は定数時間・定数メモリ</span></div>
+      <div class=&quot;row&quot;><span class=&quot;ico good&quot;>✓</span><span>LTI なら畳み込み形で並列学習でき、長距離ベンチで圧勝</span></div>
+      <div class=&quot;row&quot;><span class=&quot;ico bad&quot;>✕</span><span><b>LTI（線形時不変）</b>: A,B,C が全トークンで固定 → 内容で選別できない</span></div>
+      <div class=&quot;row&quot;><span class=&quot;ico bad&quot;>✕</span><span>テキストのような密な離散データで Transformer に負ける</span></div>
+    </div>
+  </div>
+
+  <div class=&quot;axisnote reveal&quot;>
+    💡 論文の核心的な再定義 ── <b>「効率と性能のトレードオフは、状態がどれだけ上手く文脈を圧縮できるかで決まる」</b>。
+    効率的なモデルは小さな状態を持たねばならず、効果的なモデルは文脈の必要情報をすべて含む状態を持たねばならない。
+    そして決定的だったのは、<b>LTI（時不変性）は「効率のために強制されていた」</b>こと ── 時不変だからこそ畳み込みで高速学習できたが、その代償が「内容を見分けられない」だった。
+  </div>
+
+  <div class=&quot;tasks reveal&quot;>
+    <div class=&quot;task&quot;>
+      <div class=&quot;qn&quot;>🎯 Selective Copying（選択的コピー）</div>
+      <div class=&quot;desc&quot;>記憶すべきトークンの<b>間隔をランダム化</b>。ノイズを無視し、内容に基づいて覚える「内容認識」が必須。静的な畳み込みカーネルでは可変間隔を表現できず、LTI モデルは失敗する。</div>
+      <div class=&quot;bar&quot;><span class=&quot;lab&quot;>S4 (LTI)</span><div class=&quot;track&quot;><div class=&quot;fill lo&quot; style=&quot;width:19%&quot;>18.3%</div></div></div>
+      <div class=&quot;bar&quot;><span class=&quot;lab&quot;>Mamba (S6)</span><div class=&quot;track&quot;><div class=&quot;fill hi&quot; style=&quot;width:97%&quot;>97.0%</div></div></div>
+    </div>
+    <div class=&quot;task&quot;>
+      <div class=&quot;qn&quot;>🔁 Induction Heads（連想想起）</div>
+      <div class=&quot;desc&quot;>「Harry Potter」を見た後、再び「Harry」が来たら「Potter」を出す。LLM の <b>in-context learning</b> の核とされる機構。内容に基づき「どの過去トークンを思い出すか」を選ぶ必要がある。</div>
+      <div class=&quot;bar&quot;><span class=&quot;lab&quot;>訓練長</span><div class=&quot;track&quot;><div class=&quot;fill lo&quot; style=&quot;width:12%&quot;>256</div></div></div>
+      <div class=&quot;bar&quot;><span class=&quot;lab&quot;>Mamba外挿</span><div class=&quot;track&quot;><div class=&quot;fill hi&quot; style=&quot;width:100%&quot;>100万 (4000×)</div></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- SECTION 2 -->
+<section id=&quot;s2&quot; class=&quot;wrap&quot;>
+  <div class=&quot;shead reveal&quot;>
+    <div class=&quot;snum&quot;>02</div>
+    <div>
+      <span class=&quot;en&quot;>What Mamba Enables</span>
+      <h2>Mamba が実現できること</h2>
+      <p>選択機構と、それを動かすハードウェア対応アルゴリズムにより、Mamba は「効率」と「性能」を同時に手に入れた。具体的な数字で見ていく。</p>
+    </div>
+  </div>
+
+  <div class=&quot;bigstats reveal&quot;>
+    <div class=&quot;bs&quot;><div class=&quot;n&quot;>O(N)</div><div class=&quot;l&quot;><b>線形時間スケーリング</b><br>注意の O(N²) に対し、計算もメモリも系列長に線形</div></div>
+    <div class=&quot;bs&quot;><div class=&quot;n&quot;>4–5<span class=&quot;u&quot;>×</span></div><div class=&quot;l&quot;><b>推論スループット</b><br>同サイズ Transformer 比。KVキャッシュ不要で大バッチが可能</div></div>
+    <div class=&quot;bs&quot;><div class=&quot;n&quot;>20–40<span class=&quot;u&quot;>×</span></div><div class=&quot;l&quot;><b>選択スキャンの速度</b><br>素朴な PyTorch スキャン比。系列長2K超で FlashAttention-2 より速い</div></div>
+    <div class=&quot;bs&quot;><div class=&quot;n&quot;>2<span class=&quot;u&quot;>×</span></div><div class=&quot;l&quot;><b>パラメータ効率</b><br>Mamba-3B が「2倍サイズの Transformer」に匹敵する品質</div></div>
+  </div>
+
+  <p style=&quot;color:var(--muted);margin:6px 0 18px;font-size:.92rem&quot;>推論の具体例: バッチ128 で Mamba-1.4B = <span style=&quot;font-family:var(--mono);color:var(--teal)&quot;>1814 tok/s</span> に対し Transformer-1.3B = <span style=&quot;font-family:var(--mono);color:var(--red)&quot;>364 tok/s</span>。自己回帰生成は「過去要素のキャッシュ不要」で、ステップあたり定数時間・定数メモリ。</p>
+
+  <div class=&quot;domains reveal&quot;>
+    <div class=&quot;dom&quot;>
+      <div class=&quot;ic&quot;>💬</div>
+      <h4>言語モデリング</h4>
+      <p>注意機構なしで初めて、強力な Transformer++（LLaMaレシピ）に匹敵。</p>
+      <div class=&quot;res&quot;>Mamba-2.8B 平均 63.3 pt<br>vs Pythia-2.8B 59.1 pt<br>Pile ppl: 6.22（同 6.73）</div>
+    </div>
+    <div class=&quot;dom&quot;>
+      <div class=&quot;ic&quot;>🧬</div>
+      <h4>ゲノミクス（DNA）</h4>
+      <p>系列長を伸ばすほど精度が向上。LTI ベースライン(HyenaDNA)は逆に悪化。</p>
+      <div class=&quot;res&quot;>最大 2²⁰ = 1,048,576 塩基<br>5種の大型類人猿を分類<br>（DNA約99%が共通）</div>
+    </div>
+    <div class=&quot;dom&quot;>
+      <div class=&quot;ic&quot;>🔊</div>
+      <h4>音声波形</h4>
+      <p>生の波形を自己回帰生成。従来SOTAの半分以下の FID を達成。</p>
+      <div class=&quot;res&quot;>SC09 音声生成<br>FID 0.94<br>vs SaShiMi 1.99（−52%超）</div>
+    </div>
+  </div>
+
+  <div class=&quot;axisnote reveal&quot; style=&quot;border-style:solid&quot;>
+    🚀 <b style=&quot;color:var(--teal)&quot;>なぜ重要か</b> ── ① <b>長文脈アプリ</b>（ゲノム・音声・長文書・コードベース）で注意の二次コストを回避。
+    ② <b>効率/コスト</b>: 定数メモリ・KVキャッシュ不要で大バッチ → サービングコスト減。
+    ③ <b>エッジ/オンデバイス</b>: 固定状態の再帰はメモリ上限が予測可能で、ストリーミング推論に向く。
+  </div>
+</section>
+
+<!-- SECTION 3 -->
+<section id=&quot;s3&quot; class=&quot;wrap&quot;>
+  <div class=&quot;shead reveal&quot;>
+    <div class=&quot;snum&quot;>03</div>
+    <div>
+      <span class=&quot;en&quot;>Related Research / Lineage</span>
+      <h2>Mamba の関連研究と系譜</h2>
+      <p>Mamba は突然現れたのではない。HiPPO に始まる<b>状態空間モデルの本流</b>と、線形注意に始まる<b>RNN復権の流れ</b>── 2つの系譜が収束した到達点である。多くが Gu・Dao・Ré（Stanford Hazy Research）に繋がる。</p>
+    </div>
+  </div>
+
+  <div class=&quot;tracks reveal&quot;>
+    <div class=&quot;trackkey&quot;><span class=&quot;dotA&quot;></span>Track A — 状態空間モデル本流（SSM spine）</div>
+    <div class=&quot;trackkey&quot;><span class=&quot;dotB&quot;></span>Track B — 線形注意 / RNN復権</div>
+  </div>
+
+  <div class=&quot;tlwrap reveal&quot;>
+    <div class=&quot;tlrow&quot;>
+      <div class=&quot;yr&quot;>2020</div>
+      <div class=&quot;tcell acol&quot;>
+        <div class=&quot;tnode a&quot;><div class=&quot;nm&quot;><span>HiPPO</span><span class=&quot;y&quot;>2008.07669</span></div><div class=&quot;ds&quot;>記憶を「オンライン関数近似」として定式化。履歴を多項式基底に射影する HiPPO 行列 A を導出 ── 全系譜の理論的礎。</div></div>
+      </div>
+      <div class=&quot;tcell bcol&quot;>
+        <div class=&quot;tnode b&quot;><div class=&quot;nm&quot;><span>Linear Attention</span><span class=&quot;y&quot;>2006.16236</span></div><div class=&quot;ds&quot;>「Transformers are RNNs」。softmax をカーネルに置換し、注意を O(N) の線形再帰へ。行列値状態を持つRNNと等価。</div></div>
+      </div>
+    </div>
+    <div class=&quot;tlrow&quot;>
+      <div class=&quot;yr&quot;>2021</div>
+      <div class=&quot;tcell acol&quot;>
+        <div class=&quot;tnode a&quot;><div class=&quot;nm&quot;><span>LSSL</span><span class=&quot;y&quot;>2110.13985</span></div><div class=&quot;ds&quot;>SSM を深層学習の層に。「再帰 ⇄ 畳み込み ⇄ 連続時間」の三位一体（duality）を確立。ただし計算は非実用的だった。</div></div>
+        <div class=&quot;tnode a&quot;><div class=&quot;nm&quot;><span>S4</span><span class=&quot;y&quot;>2111.00396</span></div><div class=&quot;ds&quot;>実用的な基礎SSM。NPLR（正規+低ランク）構造で計算を O(N log N) に。Long Range Arena を席巻し Path-X を初めて解いた。<b>Mamba の直接の親</b>。</div></div>
+      </div>
+      <div class=&quot;tcell bcol&quot;></div>
+    </div>
+    <div class=&quot;tlrow&quot;>
+      <div class=&quot;yr&quot;>2022</div>
+      <div class=&quot;tcell acol&quot;>
+        <div class=&quot;tnode a&quot;><div class=&quot;nm&quot;><span>DSS / S4D</span><span class=&quot;y&quot;>2203.14343 / 2206.11893</span></div><div class=&quot;ds&quot;>低ランク補正を捨て<b>対角SSM</b>でも同等と証明。Mamba の対角 A と初期化(S4D-Real)はここから。</div></div>
+        <div class=&quot;tnode a&quot;><div class=&quot;nm&quot;><span>S5</span><span class=&quot;y&quot;>2208.04933</span></div><div class=&quot;ds&quot;>MIMO化し、畳み込みを捨てて<b>並列スキャン</b>で再帰を直接計算。Mamba のスキャン戦略の方法論的橋渡し。</div></div>
+        <div class=&quot;tnode a&quot;><div class=&quot;nm&quot;><span>GSS</span><span class=&quot;y&quot;>2206.13947</span></div><div class=&quot;ds&quot;>対角SSMを<b>ゲート付き活性化</b>で包む。「SSM + GLU型ゲート」が言語で効く、という流れ。</div></div>
+        <div class=&quot;tnode a&quot;><div class=&quot;nm&quot;><span>H3 (Hungry Hungry Hippos)</span><span class=&quot;y&quot;>2212.14052</span></div><div class=&quot;ds&quot;>言語で注意との差を本格的に縮めた。shift SSM + 対角SSM + 乗算ゲート。<b>Mamba ブロックの構造的な親</b>。</div></div>
+      </div>
+      <div class=&quot;tcell bcol&quot;>
+        <div class=&quot;tnode b&quot;><div class=&quot;nm&quot;><span>FlashAttention</span><span class=&quot;y&quot;>2205.14135</span></div><div class=&quot;ds&quot;>注意の高速「実装」。IO 対応（HBM⇄SRAM のメモリ階層）+ タイリング + 再計算。<b>Mamba の選択スキャンの設計思想の祖</b>（著者 Tri Dao が共通）。</div></div>
+      </div>
+    </div>
+    <div class=&quot;tlrow&quot;>
+      <div class=&quot;yr&quot;>2023</div>
+      <div class=&quot;tcell acol&quot;>
+        <div class=&quot;tnode a&quot;><div class=&quot;nm&quot;><span>Hyena</span><span class=&quot;y&quot;>2302.10866</span></div><div class=&quot;ds&quot;>H3 の後継。SSM再帰の代わりに<b>暗黙的な長い畳み込み</b>+データ制御ゲート。FFTで準二次。Mamba の主要な同時代ライバル。</div></div>
+      </div>
+      <div class=&quot;tcell bcol&quot;>
+        <div class=&quot;tnode b&quot;><div class=&quot;nm&quot;><span>RWKV</span><span class=&quot;y&quot;>2305.13048</span></div><div class=&quot;ds&quot;>RNN を Transformer 時代に再発明。並列学習・O(1)推論の二形式。14Bまでスケール。decay は<b>データ非依存</b>。</div></div>
+        <div class=&quot;tnode b&quot;><div class=&quot;nm&quot;><span>RetNet</span><span class=&quot;y&quot;>2307.08621</span></div><div class=&quot;ds&quot;>Retention 機構。並列/再帰/チャンク再帰の3形式が等価。減衰はLTI的（データ非依存）。Mamba との対比が鮮やか。</div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class=&quot;arrowdown reveal&quot;>▼</div>
+  <div class=&quot;converge reveal&quot;>
+    <div class=&quot;big&quot;>🐍 MAMBA — 2つの系譜の収束（2023年12月）</div>
+    <p>
+      <b style=&quot;color:var(--teal)&quot;>S4/S4D の対角SSM</b>（HiPPO行列で初期化）に、<b style=&quot;color:var(--teal)&quot;>H3 の言語向けゲート付きブロック</b>を与え、
+      <b style=&quot;color:var(--purple)&quot;>線形注意/RWKV/RetNet のデータ依存再帰</b>の精神で内容選択的にし、
+      <b style=&quot;color:var(--purple)&quot;>S5 の並列スキャン</b>を <b style=&quot;color:var(--purple)&quot;>FlashAttention のハードウェア対応規律</b>の下で高速化した ── それが Mamba。
+    </p>
+  </div>
+</section>
+
+<!-- SECTION 4 -->
+<section id=&quot;s4&quot; class=&quot;wrap&quot;>
+  <div class=&quot;shead reveal&quot;>
+    <div class=&quot;snum&quot;>04</div>
+    <div>
+      <span class=&quot;en&quot;>Algorithm &amp;amp; Implementation</span>
+      <h2>Mamba のアルゴリズムと実現方法</h2>
+      <p>「連続SSM → 離散化 → 二つの表現 → <b>選択機構(核心)</b> → ハードウェア対応スキャン → Mamba ブロック」の順で、仕組みを段階的に解剖する。</p>
+    </div>
+  </div>
+
+  <!-- 4.1 -->
+  <div class=&quot;step reveal&quot;>
+    <div class=&quot;sk&quot;>STEP 1 — 基礎</div>
+    <h3>状態空間モデル（SSM）とは</h3>
+    <p>SSM は1次元の入力 <i>x(t)</i> を、N次元の潜在状態 <i>h(t)</i> を経由して出力 <i>y(t)</i> へ写す連続時間システム。4つのパラメータ <i>(Δ, A, B, C)</i> で定義される。</p>
+    <div class=&quot;eq&quot;>
+      <i>h</i>′(<i>t</i>) <span class=&quot;op&quot;>=</span> <i>A h</i>(<i>t</i>) <span class=&quot;op&quot;>+</span> <i>B x</i>(<i>t</i>)
+      <span style=&quot;margin-left:28px&quot;><i>y</i>(<i>t</i>) <span class=&quot;op&quot;>=</span> <i>C h</i>(<i>t</i>)</span>
+      <small>状態方程式（左）と出力方程式（右）</small>
+    </div>
+    <div class=&quot;params&quot;>
+      <div class=&quot;param&quot;><div class=&quot;v&quot;>A</div><div class=&quot;nm&quot;>(N×N) 状態の発展・減衰<br>= 記憶のダイナミクス</div></div>
+      <div class=&quot;param&quot;><div class=&quot;v&quot;>B</div><div class=&quot;nm&quot;>(N×1) 入力を<br>状態へ取り込む</div></div>
+      <div class=&quot;param&quot;><div class=&quot;v&quot;>C</div><div class=&quot;nm&quot;>(1×N) 状態を<br>出力へ写す</div></div>
+      <div class=&quot;param&quot;><div class=&quot;v&quot;>Δ</div><div class=&quot;nm&quot;>ステップ幅<br>= 入力の「解像度」</div></div>
+    </div>
+    <p>A は HiPPO 理論で初期化され、履歴を効率的に記憶する（Mamba の既定は S4D-Real）。</p>
+  </div>
+
+  <!-- 4.2 -->
+  <div class=&quot;step reveal&quot;>
+    <div class=&quot;sk&quot;>STEP 2 — 離散化</div>
+    <h3>連続を離散へ：ゼロ次ホールド（ZOH）</h3>
+    <p>トークンは離散なので、ステップ幅 <i>Δ</i> で連続システムを離散化する。<i>(Δ, A, B)</i> → 離散版 <i>(Ā, B̄)</i> へ変換し、「関数→関数」の写像を「系列→系列」へ。離散化は学習時の<b>前向き計算の最初のステップ</b>として行われる。</p>
+    <div class=&quot;eq&quot;>
+      <span class=&quot;ovl&quot;>A</span> <span class=&quot;op&quot;>=</span> exp(<i>Δ A</i>)
+      <span style=&quot;margin-left:34px&quot;><span class=&quot;ovl&quot;>B</span> <span class=&quot;op&quot;>=</span> (<i>Δ A</i>)<sup>−1</sup>(exp(<i>Δ A</i>) <span class=&quot;op&quot;>−</span> <i>I</i>) <span class=&quot;op&quot;>·</span> <i>Δ B</i></span>
+      <small>ゼロ次ホールドによる離散化（Δ が「各値をどれだけ保持するか」= 解像度を決める）</small>
+    </div>
+  </div>
+
+  <!-- 4.3 -->
+  <div class=&quot;step reveal&quot;>
+    <div class=&quot;sk&quot;>STEP 3 — 二つの表現</div>
+    <h3>再帰 ⇄ 畳み込みの<span class=&quot;em&quot;>双対性</span></h3>
+    <p>離散化された LTI な SSM は、数学的に等価な<b>2通り</b>で計算できる。S4 までの戦略は「畳み込みで並列学習し、再帰で高速推論」── ただしこれは <b>LTI（時不変）でないと成立しない</b>。</p>
+    <div class=&quot;dual&quot;>
+      <div class=&quot;dualbox rec&quot;>
+        <div class=&quot;h&quot;>🔄 再帰形（Recurrent）</div>
+        <div class=&quot;meta&quot;>推論向き / ステップあたり O(1)・定数メモリ</div>
+        <div class=&quot;eq&quot; style=&quot;font-size:1.05rem;text-align:left;margin:0&quot;>
+          <i>h</i><sub>t</sub> <span class=&quot;op&quot;>=</span> <span class=&quot;ovl&quot;>A</span> <i>h</i><sub>t−1</sub> <span class=&quot;op&quot;>+</span> <span class=&quot;ovl&quot;>B</span> <i>x</i><sub>t</sub><br>
+          <i>y</i><sub>t</sub> <span class=&quot;op&quot;>=</span> <i>C h</i><sub>t</sub>
+        </div>
+      </div>
+      <div class=&quot;dualbox conv&quot;>
+        <div class=&quot;h&quot;>🌀 畳み込み形（Convolutional）</div>
+        <div class=&quot;meta&quot;>学習向き / 系列全体を並列計算</div>
+        <div class=&quot;eq&quot; style=&quot;font-size:1.05rem;text-align:left;margin:0&quot;>
+          <span class=&quot;ovl&quot;>K</span> <span class=&quot;op&quot;>=</span> (<i>C</i><span class=&quot;ovl&quot;>B</span>, <i>C</i><span class=&quot;ovl&quot;>A</span><span class=&quot;ovl&quot;>B</span>, …, <i>C</i><span class=&quot;ovl&quot;>A</span><sup>k</sup><span class=&quot;ovl&quot;>B</span>, …)<br>
+          <i>y</i> <span class=&quot;op&quot;>=</span> <i>x</i> <span class=&quot;op&quot;>∗</span> <span class=&quot;ovl&quot;>K</span>
+        </div>
+      </div>
+    </div>
+    <p style=&quot;margin-top:12px;font-size:.88rem&quot;>畳み込みが必要な理由: 再帰形は形状 (B, L, D, <b>N</b>) の状態を実体化する必要があり、入出力より N(≈10〜100)倍も大きい。畳み込みはこれを回避できる。</p>
+  </div>
+
+  <!-- 4.4 KEY -->
+  <div class=&quot;step reveal&quot; style=&quot;border-color:var(--border2);background:linear-gradient(160deg,rgba(61,215,198,.07),rgba(167,139,250,.05))&quot;>
+    <div class=&quot;sk&quot;>STEP 4 — ★ 核心の発明</div>
+    <h3>選択機構：<span class=&quot;em&quot;>Selective SSM (S6)</span></h3>
+    <p>たった一つのアイデア ── <b>B, C, Δ を入力 x の関数にする</b>（入力依存にする）。これが LTI を破り、モデルを時変にする。S4(Algorithm 1) では静的だったパラメータが、トークンごとに変わる。</p>
+    <table>
+      <thead><tr><th>パラメータ</th><th>S4（LTI）</th><th>Mamba / S6</th><th>入力依存？</th></tr></thead>
+      <tbody>
+        <tr><td><span class=&quot;mono&quot;>A</span></td><td><span class=&quot;mono&quot;>(D, N)</span> 固定</td><td><span class=&quot;mono&quot;>(D, N)</span> 固定</td><td class=&quot;no&quot;>No（あえて静的）</td></tr>
+        <tr class=&quot;hl-row&quot;><td><span class=&quot;mono&quot;>B</span></td><td><span class=&quot;mono&quot;>(D, N)</span> 固定</td><td class=&quot;mono&quot; style=&quot;color:var(--teal)&quot;>(B, L, N) ← s_B(x)</td><td class=&quot;yes&quot;>Yes</td></tr>
+        <tr class=&quot;hl-row&quot;><td><span class=&quot;mono&quot;>C</span></td><td><span class=&quot;mono&quot;>(D, N)</span> 固定</td><td class=&quot;mono&quot; style=&quot;color:var(--teal)&quot;>(B, L, N) ← s_C(x)</td><td class=&quot;yes&quot;>Yes</td></tr>
+        <tr class=&quot;hl-row&quot;><td><span class=&quot;mono&quot;>Δ</span></td><td><span class=&quot;mono&quot;>(D)</span></td><td class=&quot;mono&quot; style=&quot;color:var(--teal)&quot;>(B, L, D) ← τ(P+s_Δ(x))</td><td class=&quot;yes&quot;>Yes</td></tr>
+      </tbody>
+    </table>
+    <p>新たに加わった<b>系列次元 L</b> が「時変」の正体。B は「入力を状態に入れるか」、C は「状態を出力に出すか」を、その場のトークン内容で変調する ── これが<b>内容に基づく推論</b>を可能にし、Selective Copying と Induction Heads を解く。</p>
+
+    <p style=&quot;margin-top:14px&quot;><b>Δ は何を制御するか ── 注目するか / 無視するか:</b></p>
+    <div class=&quot;focusbox&quot;>
+      <div class=&quot;fb big&quot;>
+        <div class=&quot;d&quot;>Δ → ∞</div>
+        <div class=&quot;t&quot;>🔆 現在の入力に注目（focus）</div>
+        <p>状態をリセットし、今の入力を強く取り込む。文書境界のリセットにも対応。</p>
+      </div>
+      <div class=&quot;fb small&quot;>
+        <div class=&quot;d&quot;>Δ → 0</div>
+        <div class=&quot;t&quot;>🌫 現在の入力を無視（ignore）</div>
+        <p>状態を保持し、今の入力（ノイズ等）をフィルタして捨てる。</p>
+      </div>
+    </div>
+    <p style=&quot;margin-top:14px;font-size:.9rem&quot;><b>定理1:</b> N=1, A=−1, B=1 等の特別な場合、この選択的再帰は<b>古典的なゲート付きRNN</b>と完全に一致する ── <i>h<sub>t</sub> = (1−g<sub>t</sub>)h<sub>t−1</sub> + g<sub>t</sub>x<sub>t</sub></i>。
+    つまり「SSMの離散化は、ヒューリスティックなゲート機構の原理的な基礎」である。A を静的に保つのは、Δ が選択的なら <span class=&quot;mono&quot;>Ā=exp(ΔA)</span> 経由で十分に選択的になるため。</p>
+  </div>
+
+  <!-- 4.5 -->
+  <div class=&quot;step reveal&quot;>
+    <div class=&quot;sk&quot;>STEP 5 — ハードウェア対応</div>
+    <h3>選択スキャン：<span class=&quot;em&quot;>Selective Scan</span></h3>
+    <p>選択機構は畳み込みを壊す（カーネルが固定でなくなる）。よって<b>再帰形を直接計算</b>するしかないが、巨大な状態 (B,L,D,N) を遅い HBM に書くのは致命的。FlashAttention の思想を SSM に適用し、3つの古典技法で解決する。</p>
+
+    <div class=&quot;hw&quot;>
+      <div class=&quot;mem hbm&quot;>
+        <div class=&quot;mt&quot;>🐌 HBM</div>
+        <div class=&quot;ms&quot;>大容量・低速（DRAM）</div>
+        <div class=&quot;it&quot;>入力 (Δ, A, B, C)</div>
+        <div class=&quot;it&quot;>出力 (B, L, D) のみ書戻し</div>
+      </div>
+      <div class=&quot;hwarrows&quot;><div>→</div><div>←</div></div>
+      <div class=&quot;mem sram&quot;>
+        <div class=&quot;mt&quot;>⚡ SRAM</div>
+        <div class=&quot;ms&quot;>小容量・高速（オンチップ）</div>
+        <div class=&quot;it&quot;>① 離散化</div>
+        <div class=&quot;it&quot;>② スキャン（再帰）</div>
+        <div class=&quot;it&quot;>③ C との乗算</div>
+      </div>
+    </div>
+    <p class=&quot;hwnote&quot;>N倍に膨らんだ状態は <b style=&quot;color:var(--teal)&quot;>一度も HBM に書かれない</b>（カーネル融合）</p>
+
+    <div class=&quot;grid3&quot; style=&quot;margin-top:16px&quot;>
+      <div class=&quot;card&quot; style=&quot;padding:18px&quot;><h3 style=&quot;font-size:1rem&quot;>① 並列スキャン</h3><p style=&quot;font-size:.86rem&quot;>再帰は単純な累積和ではないが<b>結合的</b>。Blelloch の並列スキャンで、畳み込みなしでも系列方向に並列化できる。</p></div>
+      <div class=&quot;card&quot; style=&quot;padding:18px&quot;><h3 style=&quot;font-size:1rem&quot;>② カーネル融合</h3><p style=&quot;font-size:.86rem&quot;>離散化→スキャン→C乗算を SRAM 内で一気に実行。メモリ帯域律速を解消（FlashAttention と同じ発想）。</p></div>
+      <div class=&quot;card&quot; style=&quot;padding:18px&quot;><h3 style=&quot;font-size:1rem&quot;>③ 再計算</h3><p style=&quot;font-size:.86rem&quot;>逆伝播に必要な中間状態を保存せず、後ろ向き計算で再計算。遅い HBM から読むより安い。</p></div>
+    </div>
+    <p style=&quot;margin-top:14px;font-size:.88rem&quot;>結果、最適化された FlashAttention 系 Transformer と<b>同等のメモリ使用量</b>。FLOP も、長い L では再帰 O(BLDN) の方が畳み込み O(BLD log L) より少ないことすらある。</p>
+  </div>
+
+  <!-- 4.6 -->
+  <div class=&quot;step reveal&quot;>
+    <div class=&quot;sk&quot;>STEP 6 — アーキテクチャ</div>
+    <h3>Mamba ブロック</h3>
+    <p>Mamba は <b>H3 ブロック</b>と<b>ゲート付きMLP</b>を一つの均質なブロックに融合し、それを単純に積み重ねる（独立した注意層もMLP層もない）。H3 比では最初の乗算ゲートを<b>活性化関数に置換</b>、MLP比では<b>主分岐に SSM を追加</b>した形。</p>
+    <div class=&quot;block reveal&quot;>
+      <div class=&quot;bnode io&quot;>入力 (model dim D)</div>
+      <div class=&quot;barrow&quot;>↓</div>
+      <div class=&quot;bnode proj&quot;>線形射影で拡大（拡大率 E=2）</div>
+      <div class=&quot;barrow&quot;>↓ &amp;nbsp; 2分岐に分割 &amp;nbsp; ↓</div>
+      <div class=&quot;branches&quot;>
+        <div class=&quot;branch&quot;>
+          <div class=&quot;bl&quot;>MAIN BRANCH</div>
+          <div class=&quot;bnode proj&quot; style=&quot;width:100%&quot;>Conv1d（短い因果畳み込み）</div>
+          <div class=&quot;barrow&quot;>↓</div>
+          <div class=&quot;bnode act&quot; style=&quot;width:100%&quot;>SiLU / Swish</div>
+          <div class=&quot;barrow&quot;>↓</div>
+          <div class=&quot;bnode ssm&quot; style=&quot;width:100%&quot;>Selective SSM (S6)</div>
+        </div>
+        <div class=&quot;branch&quot; style=&quot;justify-content:center&quot;>
+          <div class=&quot;bl&quot;>GATE BRANCH</div>
+          <div class=&quot;bnode act&quot; style=&quot;width:100%&quot;>SiLU / Swish</div>
+          <div style=&quot;color:var(--dim);font-size:.76rem;margin-top:6px&quot;>（ゲート信号）</div>
+        </div>
+      </div>
+      <div class=&quot;barrow&quot;>↓ &amp;nbsp;<span class=&quot;gate&quot;>⊗</span>&amp;nbsp; 乗算ゲート ↓</div>
+      <div class=&quot;bnode proj&quot;>線形射影で元の次元 D に戻す</div>
+      <div class=&quot;barrow&quot;>↓</div>
+      <div class=&quot;bnode io&quot;>出力（+ 残差接続 / 正規化）</div>
+    </div>
+    <div class=&quot;blocknote&quot;>
+      <b>設計のポイント:</b> Conv1d は隣接トークンを混ぜ、選択SSMがトークンを独立に扱わないようにする。乗算ゲートにより MLP 部は <b>SwiGLU</b> 変種になる。
+      パラメータの大半 (3ED²) は線形射影に集中し、内側のSSM自体は小さい。状態は既定で<b>実数値</b>（離散データに有効）。E=2 で Mamba ブロック2つ ≈ Transformer の MHA+MLP 1組のパラメータ量。
+    </div>
+  </div>
+</section>
+
+<!-- SECTION 5 -->
+<section id=&quot;s5&quot; class=&quot;wrap&quot;>
+  <div class=&quot;shead reveal&quot;>
+    <div class=&quot;snum&quot;>05</div>
+    <div>
+      <span class=&quot;en&quot;>What to Study Next</span>
+      <h2>次に調べるべき技術要素・キーワード</h2>
+      <p>Mamba 以降、SSM エコシステムは爆発的に拡大した。最重要の後継から応用分野、そして「本当に Transformer に匹敵するのか」という未解決の論争まで。</p>
+    </div>
+  </div>
+
+  <div class=&quot;feature reveal&quot;>
+    <div class=&quot;ft&quot;>
+      <span class=&quot;star&quot;>★ 最重要後継</span>
+      <h3>Mamba-2 / State Space Duality (SSD)</h3>
+      <span class=&quot;tag tagp&quot;>arXiv:2405.21060</span>
+    </div>
+    <p>「Transformers are SSMs」── <b>SSM と注意は同じ数学的対象の2つの計算形式</b>であることを証明。選択的SSMは <span class=&quot;mono&quot; style=&quot;color:var(--teal)&quot;>Y = (L ⊙ CBᵀ)X</span> という行列積（構造的半分離行列）で書け、減衰が全て1なら<b>因果的線形注意</b>に一致する。</p>
+    <div class=&quot;pts&quot;>
+      <div><b>2〜8倍高速</b>: チャンク分解で、チャンク内は注意形（密行列積でTensor Core飽和）、チャンク間は線形再帰</div>
+      <div><b>状態が最大16倍大きい</b>: A をスカラー×単位行列に制限する代わりに N≈64〜256（Mamba-1 は N=16）</div>
+      <div><b>マルチヘッド構造</b>: 注意に似たヘッド設計でテンソル並列・系列並列に向く</div>
+      <div><b>連想想起の改善</b>: 大きな状態で MQAR 性能が向上（ただし注意との差は完全には埋まらない）</div>
+    </div>
+  </div>
+
+  <div class=&quot;kwgrid reveal&quot;>
+    <div class=&quot;kwcat&quot;>
+      <div class=&quot;ch&quot;>🔀 本番級ハイブリッド</div>
+      <div class=&quot;csub&quot;>「ハイブリッドが最強」── 2024〜25の主流トレンド</div>
+      <div class=&quot;kwitem&quot;><span class=&quot;knm&quot;>Jamba</span><span class=&quot;kds&quot;>Transformer+Mamba+MoE。52B/12B、単一80GBで256K文脈<span class=&quot;kid&quot;>AI21 · 2403.19887</span></span></div>
+      <div class=&quot;kwitem&quot;><span class=&quot;knm&quot;>Samba</span><span class=&quot;kds&quot;>Mamba + Sliding Window Attention。無限文脈の外挿に強い<span class=&quot;kid&quot;>Microsoft · 2406.07522</span></span></div>
+      <div class=&quot;kwitem&quot;><span class=&quot;knm&quot;>Hymba</span><span class=&quot;kds&quot;>注意ヘッドとSSMヘッドを同一層で並列に<span class=&quot;kid&quot;>NVIDIA · 2411.13676</span></span></div>
+      <div class=&quot;kwitem&quot;><span class=&quot;knm&quot;>Zamba / Bamba</span><span class=&quot;kds&quot;>共有注意の7Bハイブリッド / IBM の Mamba-2 系<span class=&quot;kid&quot;>2405.16712 / HF</span></span></div>
+    </div>
+
+    <div class=&quot;kwcat&quot;>
+      <div class=&quot;ch&quot;>👁 ビジョン</div>
+      <div class=&quot;csub&quot;>非因果な2Dデータへの拡張</div>
+      <div class=&quot;kwitem&quot;><span class=&quot;knm&quot;>Vision Mamba (Vim)</span><span class=&quot;kds&quot;>双方向Mambaの純SSM視覚バックボーン<span class=&quot;kid&quot;>2401.09417</span></span></div>
+      <div class=&quot;kwitem&quot;><span class=&quot;knm&quot;>VMamba</span><span class=&quot;kds&quot;>2D選択スキャン(SS2D)・Cross-Scanで全画素にグローバル受容野<span class=&quot;kid&quot;>2401.10166</span></span></div>
+      <div class=&quot;kwitem&quot;><span class=&quot;knm&quot;>MambaVision</span><span class=&quot;kds&quot;>Mamba-Transformerハイブリッド視覚<span class=&quot;kid&quot;>2407.08083</span></span></div>
+    </div>
+
+    <div class=&quot;kwcat&quot;>
+      <div class=&quot;ch&quot;>🧩 MoE・トークンフリー・専用</div>
+      <div class=&quot;csub&quot;>スケーリングと表現の工夫</div>
+      <div class=&quot;kwitem&quot;><span class=&quot;knm&quot;>MoE-Mamba</span><span class=&quot;kds&quot;>Mamba+MoE FFN。約2.2倍少ない学習ステップで到達<span class=&quot;kid&quot;>2401.04081</span></span></div>
+      <div class=&quot;kwitem&quot;><span class=&quot;knm&quot;>MambaByte</span><span class=&quot;kds&quot;>トークン化を廃しバイト列を直接モデル化<span class=&quot;kid&quot;>2401.13660</span></span></div>
+      <div class=&quot;kwitem&quot;><span class=&quot;knm&quot;>Codestral Mamba</span><span class=&quot;kds&quot;>Mamba-2 コードモデル7.3B。HumanEval 75.0%<span class=&quot;kid&quot;>Mistral · 2024.07</span></span></div>
+      <div class=&quot;kwitem&quot;><span class=&quot;knm&quot;>Falcon Mamba 7B</span><span class=&quot;kds&quot;>競争力ある純Mamba 7B<span class=&quot;kid&quot;>TII · 2410.05355</span></span></div>
+    </div>
+
+    <div class=&quot;kwcat&quot;>
+      <div class=&quot;ch&quot;>🌐 応用ドメインの爆発</div>
+      <div class=&quot;csub&quot;>線形複雑度が効く全領域へ</div>
+      <div class=&quot;kwitem&quot;><span class=&quot;knm&quot;>医療画像</span><span class=&quot;kds&quot;>U-Mamba(2401.04722), SegMamba(2401.13560, 3D)</span></div>
+      <div class=&quot;kwitem&quot;><span class=&quot;knm&quot;>時系列</span><span class=&quot;kds&quot;>TimeMachine(2403.09898), S-Mamba(2403.11144)</span></div>
+      <div class=&quot;kwitem&quot;><span class=&quot;knm&quot;>グラフ / 点群</span><span class=&quot;kds&quot;>Graph-Mamba(2402.00789), PointMamba(2402.10739)</span></div>
+      <div class=&quot;kwitem&quot;><span class=&quot;knm&quot;>強化学習</span><span class=&quot;kds&quot;>Decision Mamba(2403.19925)</span></div>
+    </div>
+  </div>
+
+  <div class=&quot;openprob reveal&quot;>
+    <h3>⚠ 未解決の論争 — 「固定状態のSSMは本当に注意に匹敵するか？」</h3>
+    <p style=&quot;color:var(--muted);font-size:.92rem&quot;>証拠は「助けなしでは No」を示唆 ── これがハイブリッド流行の駆動力。固定サイズの再帰状態は<b>情報のボトルネック</b>である。</p>
+    <div class=&quot;pp&quot;>
+      <div class=&quot;q&quot;>① コピーの弱さ <span class=&quot;tag tagk&quot; style=&quot;margin-left:6px&quot;>2402.01032</span></div>
+      <div class=&quot;a&quot;>「Repeat After Me」: 2層Transformerは指数長の文字列をコピーできるが、固定状態SSMは原理的に上限あり。文脈検索・長さ汎化で注意が圧勝。</div>
+    </div>
+    <div class=&quot;pp&quot;>
+      <div class=&quot;q&quot;>② 連想想起 (MQAR) <span class=&quot;tag tagk&quot; style=&quot;margin-left:6px&quot;>Zoology 2312.04927 / Based 2402.18668</span></div>
+      <div class=&quot;a&quot;>想起性能は再帰状態サイズに相関 ──「想起 vs スループット」の Pareto フロンティアが存在。安い状態は想起を犠牲にする。</div>
+    </div>
+    <div class=&quot;pp&quot;>
+      <div class=&quot;q&quot;>③ 帰結：ハイブリッド合意</div>
+      <div class=&quot;a&quot;>少量の注意を Mamba に混ぜると、純Transformer・純Mamba の<b>両方を上回る</b>（Jamba/Samba/Hymba/...）。これが2024〜25の本番トレンド。<br>調査の起点となるサーベイ: <span class=&quot;tag tagg&quot;>A Survey of Mamba 2408.01129</span> <span class=&quot;tag tagg&quot;>Mamba-360 2404.16112</span></div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <p>本インフォグラフィックは Mamba 原論文（arXiv:2312.00752, Gu &amp;amp; Dao 2023）および関連研究の調査に基づき作成。数値・主張は原典に準拠しています。</p>
+  <div class=&quot;refs&quot;>
+    <a href=&quot;https://arxiv.org/abs/2312.00752&quot;>Mamba 2312.00752</a>
+    <a href=&quot;https://arxiv.org/abs/2405.21060&quot;>Mamba-2 (SSD) 2405.21060</a>
+    <a href=&quot;https://arxiv.org/abs/2111.00396&quot;>S4 2111.00396</a>
+    <a href=&quot;https://arxiv.org/abs/2008.07669&quot;>HiPPO 2008.07669</a>
+    <a href=&quot;https://arxiv.org/abs/2212.14052&quot;>H3 2212.14052</a>
+    <a href=&quot;https://arxiv.org/abs/2205.14135&quot;>FlashAttention 2205.14135</a>
+    <a href=&quot;https://arxiv.org/abs/2402.01032&quot;>Repeat After Me 2402.01032</a>
+    <a href=&quot;https://github.com/state-spaces/mamba&quot;>github: state-spaces/mamba</a>
+  </div>
+  <p style=&quot;margin-top:14px;color:var(--dim)&quot;>🐍 Selective State Space Models — generated for technical understanding</p>
+</footer>
+
+<script>
+  document.body.classList.add('js');
+  // scroll progress
+  const prog=document.getElementById('progress');
+  // reveal on scroll
+  const io=new IntersectionObserver((es)=>{es.forEach(e=>{if(e.isIntersecting){e.target.classList.add('in');io.unobserve(e.target);}})},{threshold:.12});
+  document.querySelectorAll('.reveal').forEach(el=>io.observe(el));
+  // nav active + progress
+  const secs=[...document.querySelectorAll('section[id]')];
+  const links=[...document.querySelectorAll('nav a')];
+  function onScroll(){
+    const st=document.documentElement.scrollTop||document.body.scrollTop;
+    const h=document.documentElement.scrollHeight-document.documentElement.clientHeight;
+    prog.style.width=(st/h*100)+'%';
+    let cur=secs[0]?secs[0].id:'';
+    for(const s of secs){if(s.getBoundingClientRect().top<=120)cur=s.id;}
+    links.forEach(l=>l.classList.toggle('active',l.getAttribute('href')==='#'+cur));
+  }
+  document.addEventListener('scroll',onScroll,{passive:true});onScroll();
+</script>
+</body>
+</html>
+"></iframe>
+    <iframe class="frame" id="f-jamba" title="Jamba インフォグラフィック" loading="lazy" srcdoc="<!DOCTYPE html>
+<html lang=&quot;ja&quot;>
+<head>
+<meta charset=&quot;UTF-8&quot;>
+<meta name=&quot;viewport&quot; content=&quot;width=device-width, initial-scale=1.0&quot;>
+<title>Jamba 技術解説インフォグラフィック — Attention-Mamba-MoE Hybrid</title>
+<style>
+  :root{
+    --bg:#0a0810;--bg2:#15101f;--card:#1a1426;--card2:#221a33;--elev:#2c2142;
+    --border:#3a2d52;--border2:#4d3c6b;--text:#f0eaf7;--muted:#bda9d4;--dim:#8a76a6;
+    --teal:#5eead4;--cyan:#7dd3fc;--purple:#c4a3ff;--pink:#f9a8d4;--amber:#fcd34d;
+    --green:#86efac;--red:#fda4af;
+    --grad:linear-gradient(120deg,#fcd34d 0%,#f9a8d4 38%,#c4a3ff 72%,#7dd3fc 100%);
+    --grad2:linear-gradient(120deg,#fcd34d,#c4a3ff);
+    --mono:'SFMono-Regular',Consolas,'Liberation Mono',Menlo,monospace;
+    --math:'Cambria Math','Latin Modern Math',Cambria,Georgia,serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{scroll-behavior:smooth;scroll-padding-top:70px}
+  body{background:var(--bg);color:var(--text);font-family:'Segoe UI','Hiragino Kaku Gothic ProN','Yu Gothic UI',Meiryo,system-ui,sans-serif;line-height:1.75;font-size:16px;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+  body::before{content:&quot;&quot;;position:fixed;inset:0;z-index:-2;background:radial-gradient(ellipse 80% 50% at 12% -5%,rgba(252,211,77,.10),transparent 60%),radial-gradient(ellipse 70% 50% at 92% 4%,rgba(196,163,255,.13),transparent 60%),radial-gradient(ellipse 90% 60% at 50% 110%,rgba(249,168,212,.08),transparent 60%)}
+  body::after{content:&quot;&quot;;position:fixed;inset:0;z-index:-1;opacity:.5;background-image:radial-gradient(rgba(160,140,200,.06) 1px,transparent 1px);background-size:38px 38px}
+  a{color:var(--cyan);text-decoration:none}a:hover{text-decoration:underline}
+  #progress{position:fixed;top:0;left:0;height:3px;width:0;z-index:100;background:var(--grad);box-shadow:0 0 12px rgba(252,211,77,.6)}
+  nav{position:sticky;top:0;z-index:90;backdrop-filter:blur(12px);background:rgba(10,8,16,.8);border-bottom:1px solid var(--border)}
+  nav .navin{max-width:1180px;margin:0 auto;display:flex;align-items:center;gap:6px;padding:10px 22px;flex-wrap:wrap}
+  nav .brand{font-weight:800;letter-spacing:.5px;margin-right:auto;font-size:1.05rem;display:flex;align-items:center;gap:8px}
+  nav .brand b{background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
+  nav a{color:var(--muted);font-size:.82rem;padding:6px 11px;border-radius:8px;font-weight:600;transition:.18s;white-space:nowrap}
+  nav a:hover{color:var(--text);background:var(--card2);text-decoration:none}
+  nav a.active{color:#1a0f02;background:var(--grad2)}
+  .wrap{max-width:1180px;margin:0 auto;padding:0 22px}
+  section{padding:64px 0;border-bottom:1px solid rgba(58,45,82,.5)}
+  .hero{padding:84px 0 64px;text-align:center;position:relative}
+  .logo{font-size:3rem;filter:drop-shadow(0 0 22px rgba(252,211,77,.45));animation:float 5s ease-in-out infinite}
+  @keyframes float{50%{transform:translateY(-10px)}}
+  .hero h1{font-size:clamp(2.6rem,7vw,5rem);font-weight:900;letter-spacing:-1px;line-height:1.02;margin:14px 0 6px}
+  .hero h1 span{background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
+  .hero .sub{font-size:clamp(1rem,2.4vw,1.35rem);color:var(--muted);font-weight:500;margin-bottom:8px}
+  .hero .paper{display:inline-flex;gap:10px;align-items:center;flex-wrap:wrap;justify-content:center;margin-top:18px;font-size:.9rem}
+  .hero .paper .pill{background:var(--card);border:1px solid var(--border);border-radius:999px;padding:5px 14px;color:var(--muted)}
+  .thesis{max-width:840px;margin:30px auto 0;font-size:1.16rem;line-height:1.85;color:var(--text);background:linear-gradient(135deg,rgba(252,211,77,.07),rgba(196,163,255,.07));border:1px solid var(--border);border-left:4px solid var(--amber);border-radius:14px;padding:22px 26px}
+  .thesis b{background:var(--grad2);-webkit-background-clip:text;background-clip:text;color:transparent;font-weight:800}
+  .heroStats{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;max-width:900px;margin:34px auto 0}
+  .heroStats .s{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:18px 10px}
+  .heroStats .n{font-size:1.85rem;font-weight:900;background:var(--grad2);-webkit-background-clip:text;background-clip:text;color:transparent;line-height:1}
+  .heroStats .l{font-size:.74rem;color:var(--muted);margin-top:7px;letter-spacing:.3px}
+  .shead{display:flex;align-items:flex-start;gap:18px;margin-bottom:34px}
+  .snum{flex:none;width:60px;height:60px;border-radius:16px;display:grid;place-items:center;font-size:1.5rem;font-weight:900;background:linear-gradient(135deg,rgba(252,211,77,.16),rgba(196,163,255,.16));border:1px solid var(--border2);color:var(--amber);font-family:var(--mono)}
+  .shead h2{font-size:clamp(1.6rem,3.6vw,2.4rem);font-weight:850;letter-spacing:-.5px;line-height:1.12}
+  .shead .en{color:var(--dim);font-size:.85rem;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;display:block;margin-bottom:3px}
+  .shead p{color:var(--muted);margin-top:8px;max-width:780px}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+  .grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}
+  .card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:24px;transition:transform .2s,border-color .2s,box-shadow .2s}
+  .card:hover{transform:translateY(-4px);border-color:var(--border2);box-shadow:0 14px 40px rgba(0,0,0,.4)}
+  .card h3{font-size:1.16rem;font-weight:750;margin-bottom:10px;display:flex;align-items:center;gap:10px}
+  .card p{color:var(--muted);font-size:.94rem}
+  .card ul{list-style:none;margin-top:10px}
+  .card ul li{color:var(--muted);font-size:.92rem;padding:5px 0 5px 22px;position:relative}
+  .card ul li::before{content:&quot;▹&quot;;position:absolute;left:0;color:var(--amber)}
+  .tag{display:inline-block;font-family:var(--mono);font-size:.72rem;padding:2px 9px;border-radius:6px;background:var(--elev);border:1px solid var(--border2);color:var(--cyan);font-weight:600}
+  .tagp{color:var(--purple)}.tagk{color:var(--pink)}.taga{color:var(--amber)}.tagg{color:var(--green)}
+  .tension{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-bottom:8px}
+  .tcol{padding:24px;border-radius:16px;border:1px solid var(--border)}
+  .tcol .ttl{font-weight:800;font-size:1.08rem;margin-bottom:3px}
+  .tcol .vs{font-size:.74rem;letter-spacing:1px;text-transform:uppercase;font-weight:700;margin-bottom:13px}
+  .t-x{background:linear-gradient(160deg,rgba(125,211,252,.09),transparent);border-color:rgba(125,211,252,.3)}.t-x .vs{color:var(--cyan)}
+  .t-m{background:linear-gradient(160deg,rgba(94,234,212,.09),transparent);border-color:rgba(94,234,212,.3)}.t-m .vs{color:var(--teal)}
+  .t-o{background:linear-gradient(160deg,rgba(196,163,255,.09),transparent);border-color:rgba(196,163,255,.3)}.t-o .vs{color:var(--purple)}
+  .tcol .row{display:flex;gap:9px;padding:6px 0;font-size:.88rem;color:var(--muted);align-items:flex-start}
+  .tcol .row b{color:var(--text);font-weight:700}.tcol .ico{flex:none;width:18px;text-align:center}
+  .good{color:var(--green)}.bad{color:var(--red)}
+  .axisnote{margin-top:18px;padding:18px 22px;border-radius:14px;background:var(--card2);border:1px dashed var(--border2);font-size:.96rem;color:var(--muted)}
+  .axisnote b{color:var(--amber)}
+  .bigstats{display:grid;grid-template-columns:repeat(4,1fr);gap:18px;margin-bottom:24px}
+  .bs{background:linear-gradient(160deg,var(--card2),var(--card));border:1px solid var(--border);border-radius:16px;padding:24px 20px;position:relative;overflow:hidden}
+  .bs::before{content:&quot;&quot;;position:absolute;top:-30px;right:-30px;width:90px;height:90px;border-radius:50%;background:var(--grad2);opacity:.1;filter:blur(6px)}
+  .bs .n{font-size:2.4rem;font-weight:900;line-height:1;background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
+  .bs .u{font-size:1rem;font-weight:700;color:var(--muted)}
+  .bs .l{margin-top:9px;font-size:.85rem;color:var(--muted)}.bs .l b{color:var(--text)}
+  table{width:100%;border-collapse:collapse;margin:14px 0;font-size:.9rem;border-radius:12px;overflow:hidden}
+  table th,table td{padding:11px 14px;text-align:left;border-bottom:1px solid var(--border)}
+  table thead th{background:var(--card2);font-size:.78rem;letter-spacing:.4px;color:var(--muted);text-transform:uppercase}
+  table tbody tr{background:var(--bg2)}table tbody tr:hover{background:var(--card2)}
+  table td .mono{font-family:var(--mono);font-size:.85rem}
+  .hl{color:var(--amber);font-weight:700}
+  .winner{background:rgba(252,211,77,.08)!important}
+  .tracks{display:flex;justify-content:center;gap:14px;margin-bottom:22px;flex-wrap:wrap}
+  .trackkey{display:flex;align-items:center;gap:8px;font-size:.84rem;color:var(--muted);background:var(--card);border:1px solid var(--border);padding:6px 13px;border-radius:999px}
+  .dotA{width:11px;height:11px;border-radius:50%;background:var(--teal)}.dotB{width:11px;height:11px;border-radius:50%;background:var(--purple)}
+  .tlrow{display:grid;grid-template-columns:64px 1fr 1fr;gap:14px;align-items:stretch;padding:7px 0}
+  .yr{display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-weight:800;font-size:.95rem;color:var(--amber);background:var(--card2);border:1px solid var(--border2);border-radius:10px}
+  .tcell{display:flex;flex-direction:column;gap:10px}
+  .tnode{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:13px 15px;transition:.18s}
+  .tnode:hover{transform:translateX(4px);border-color:var(--border2)}
+  .tnode.a{border-left:3px solid var(--teal)}.tnode.b{border-left:3px solid var(--purple)}
+  .tnode .nm{font-weight:750;font-size:.96rem;display:flex;justify-content:space-between;gap:8px;align-items:baseline;flex-wrap:wrap}
+  .tnode .nm .y{font-family:var(--mono);font-size:.68rem;color:var(--dim)}
+  .tnode .ds{color:var(--muted);font-size:.84rem;margin-top:3px}
+  .converge{margin-top:14px;background:linear-gradient(120deg,rgba(252,211,77,.13),rgba(196,163,255,.13),rgba(125,211,252,.13));border:1px solid var(--border2);border-radius:16px;padding:22px 26px;text-align:center}
+  .converge .big{font-size:1.55rem;font-weight:900;background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
+  .converge p{color:var(--muted);margin-top:6px;max-width:780px;margin-inline:auto;font-size:.94rem}
+  .arrowdown{text-align:center;font-size:1.6rem;color:var(--border2);margin:2px 0}
+  .step{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:26px;margin-bottom:20px;position:relative}
+  .step .sk{position:absolute;top:-12px;left:22px;font-family:var(--mono);font-size:.74rem;font-weight:700;color:#1a0f02;background:var(--grad2);padding:4px 12px;border-radius:7px}
+  .step h3{font-size:1.3rem;font-weight:800;margin:6px 0 12px}
+  .step h3 .em{background:var(--grad2);-webkit-background-clip:text;background-clip:text;color:transparent}
+  .step p{color:var(--muted)}.step p b{color:var(--text)}
+  .dof{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin:16px 0}
+  .dofcell{background:var(--bg2);border:1px solid var(--border);border-radius:11px;padding:14px 10px;text-align:center}
+  .dofcell .v{font-family:var(--math);font-style:italic;font-size:1.5rem;font-weight:700;color:var(--amber)}
+  .dofcell .eq{font-family:var(--mono);font-size:.92rem;color:var(--teal);margin:2px 0}
+  .dofcell .nm{font-size:.74rem;color:var(--muted);margin-top:3px}
+  /* jamba block diagram */
+  .jblock{max-width:600px;margin:10px auto;border:1px dashed var(--border2);border-radius:16px;padding:18px;background:var(--bg2)}
+  .jblock .bt{text-align:center;font-size:.8rem;color:var(--dim);font-family:var(--mono);margin-bottom:12px;letter-spacing:.5px}
+  .jlayer{display:grid;grid-template-columns:44px 1fr 1fr;gap:8px;align-items:center;margin:6px 0}
+  .jlayer .idx{font-family:var(--mono);font-size:.78rem;color:var(--dim);text-align:center}
+  .jmix,.jffn{padding:9px 12px;border-radius:9px;font-size:.86rem;font-weight:650;text-align:center;border:1px solid var(--border)}
+  .jmix.mamba{background:linear-gradient(90deg,rgba(94,234,212,.16),rgba(94,234,212,.05));border-color:rgba(94,234,212,.4);color:var(--teal)}
+  .jmix.attn{background:linear-gradient(90deg,rgba(252,211,77,.2),rgba(252,211,77,.06));border-color:rgba(252,211,77,.55);color:var(--amber);font-weight:800;box-shadow:0 0 16px rgba(252,211,77,.18)}
+  .jffn.mlp{background:var(--card2);color:var(--muted)}
+  .jffn.moe{background:linear-gradient(90deg,rgba(196,163,255,.16),rgba(196,163,255,.05));border-color:rgba(196,163,255,.4);color:var(--purple)}
+  .jlegend{display:flex;gap:14px;justify-content:center;flex-wrap:wrap;margin-top:14px;font-size:.78rem;color:var(--muted)}
+  .jlegend span{display:flex;align-items:center;gap:6px}
+  .sw{width:13px;height:13px;border-radius:4px}
+  .blocknote{font-size:.85rem;color:var(--muted);margin-top:14px;background:var(--card2);border:1px solid var(--border);border-radius:11px;padding:14px 16px}
+  .blocknote b{color:var(--text)}
+  .feature{background:linear-gradient(120deg,rgba(252,211,77,.12),rgba(196,163,255,.1));border:1px solid var(--border2);border-radius:18px;padding:28px;margin-bottom:22px}
+  .feature .ft{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:8px}
+  .feature h3{font-size:1.4rem;font-weight:850}
+  .feature .star{background:var(--amber);color:#1a1300;font-size:.7rem;font-weight:800;padding:3px 10px;border-radius:999px;letter-spacing:.5px}
+  .feature p{color:var(--muted);font-size:.95rem}
+  .feature .pts{display:grid;grid-template-columns:1fr 1fr;gap:10px 22px;margin-top:14px}
+  .feature .pts div{font-size:.9rem;color:var(--muted);padding-left:20px;position:relative}
+  .feature .pts div::before{content:&quot;◆&quot;;position:absolute;left:0;color:var(--amber);font-size:.7rem;top:5px}
+  .feature .pts b{color:var(--text)}
+  .kwgrid{display:grid;grid-template-columns:repeat(2,1fr);gap:18px}
+  .kwcat{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:22px}
+  .kwcat .ch{font-weight:800;font-size:1.1rem;margin-bottom:4px;display:flex;align-items:center;gap:9px}
+  .kwcat .csub{color:var(--dim);font-size:.82rem;margin-bottom:14px}
+  .kwitem{display:flex;gap:11px;padding:9px 0;border-top:1px solid var(--border);align-items:baseline}
+  .kwitem:first-of-type{border-top:none}
+  .kwitem .knm{font-weight:700;font-size:.92rem;min-width:120px;flex:none}
+  .kwitem .kds{color:var(--muted);font-size:.84rem}
+  .kwitem .kid{font-family:var(--mono);font-size:.7rem;color:var(--dim);display:block;margin-top:2px}
+  .openprob{background:linear-gradient(160deg,rgba(196,163,255,.08),transparent);border:1px solid rgba(196,163,255,.3);border-radius:16px;padding:24px;margin-top:22px}
+  .openprob h3{color:var(--purple);font-size:1.22rem;margin-bottom:6px;display:flex;align-items:center;gap:9px}
+  .openprob .pp{margin-top:13px}
+  .openprob .pp .q{font-weight:750;color:var(--text);font-size:.94rem}
+  .openprob .pp .a{color:var(--muted);font-size:.87rem;margin-top:3px}
+  footer{padding:50px 22px 70px;text-align:center;color:var(--dim);font-size:.85rem;max-width:980px;margin:0 auto}
+  footer .refs{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin:16px 0}
+  footer .refs a{font-family:var(--mono);font-size:.74rem;background:var(--card);border:1px solid var(--border);padding:4px 10px;border-radius:7px;color:var(--muted)}
+  footer .refs a:hover{border-color:var(--border2);color:var(--cyan);text-decoration:none}
+  .crosslink{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-top:18px}
+  .crosslink a{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:8px 16px;color:var(--muted);font-size:.85rem;font-weight:600}
+  .crosslink a:hover{border-color:var(--amber);color:var(--text);text-decoration:none}
+  body.js .reveal{opacity:0;transform:translateY(26px);transition:opacity .6s ease,transform .6s ease}
+  body.js .reveal.in{opacity:1;transform:none}
+  @media(max-width:860px){
+    .grid2,.grid3,.heroStats,.bigstats,.tension,.dof,.feature .pts,.kwgrid{grid-template-columns:1fr}
+    .heroStats,.bigstats{grid-template-columns:1fr 1fr}.dof{grid-template-columns:1fr 1fr}
+    .tlrow{grid-template-columns:48px 1fr}.tlrow .tcell.bcol{grid-column:2}
+    .jlayer{grid-template-columns:30px 1fr 1fr}nav .navin{padding:8px 14px}.wrap{padding:0 15px}
+  }
+</style>
+</head>
+<body>
+<div id=&quot;progress&quot;></div>
+<nav><div class=&quot;navin&quot;>
+  <div class=&quot;brand&quot;>🟣 <b>Jamba</b></div>
+  <a href=&quot;#s1&quot;>課題</a><a href=&quot;#s2&quot;>実現できること</a><a href=&quot;#s3&quot;>関連研究</a><a href=&quot;#s4&quot;>アーキテクチャ</a><a href=&quot;#s5&quot;>次のキーワード</a>
+</div></nav>
+
+<header class=&quot;hero wrap&quot;>
+  <div class=&quot;logo&quot;>🟣🔶</div>
+  <h1>Jamba <span>:</span><br><span>Attention–Mamba–MoE Hybrid</span></h1>
+  <div class=&quot;sub&quot;>初の「本番級」Transformer–SSM ハイブリッド</div>
+  <div class=&quot;paper&quot;>
+    <span class=&quot;pill&quot;>AI21 Labs</span><span class=&quot;pill&quot;>arXiv:2403.19887</span><span class=&quot;pill&quot;>2024年3月</span><span class=&quot;pill&quot;>Jamba-1.5 → 2408.12570</span>
+  </div>
+  <div class=&quot;thesis&quot;>
+    Jamba は<b>3つの直交する設計</b>を1つに融合した ── <b>Mamba の効率</b>（小さなメモリ・高速推論）、<b>Attention の品質と想起</b>、そして<b>MoE の容量</b>（総パラメータを増やしつつ計算は増やさない）。
+    「効率的だが品質に劣る純Mamba」と「高品質だが重い純Transformer」のどちらでもなく、層レベルで両者を混ぜ、MoEで容量を稼ぐ ── これを実運用スケールで初めて成立させた。
+  </div>
+  <div class=&quot;heroStats reveal&quot;>
+    <div class=&quot;s&quot;><div class=&quot;n&quot;>52B / 12B</div><div class=&quot;l&quot;>総パラメータ / 活性パラメータ</div></div>
+    <div class=&quot;s&quot;><div class=&quot;n&quot;>256K</div><div class=&quot;l&quot;>コンテキスト長（公開最長級）</div></div>
+    <div class=&quot;s&quot;><div class=&quot;n&quot;>8×</div><div class=&quot;l&quot;>KVキャッシュ削減（vs Mixtral）</div></div>
+    <div class=&quot;s&quot;><div class=&quot;n&quot;>3×</div><div class=&quot;l&quot;>長文脈スループット（vs Mixtral）</div></div>
+  </div>
+</header>
+
+<!-- S1 -->
+<section id=&quot;s1&quot; class=&quot;wrap&quot;>
+  <div class=&quot;shead reveal&quot;><div class=&quot;snum&quot;>01</div><div>
+    <span class=&quot;en&quot;>Before Jamba</span><h2>Jamba 登場前の課題</h2>
+    <p>純Transformer・純Mamba・既存ハイブリッド、いずれも本番スケールの長文脈モデルとしては決め手を欠いていた。Jamba はその3つの欠落を同時に埋めにいった。</p>
+  </div></div>
+
+  <div class=&quot;tension reveal&quot;>
+    <div class=&quot;tcol t-x&quot;>
+      <div class=&quot;vs&quot;>効果的 / 非効率</div><div class=&quot;ttl&quot;>⚡ 純 Transformer</div>
+      <div class=&quot;row&quot;><span class=&quot;ico good&quot;>✓</span><span>完璧な想起・並列学習</span></div>
+      <div class=&quot;row&quot;><span class=&quot;ico bad&quot;>✕</span><span><b>O(N²)</b> 注意。長文脈で計算を食い尽くす</span></div>
+      <div class=&quot;row&quot;><span class=&quot;ico bad&quot;>✕</span><span>KVキャッシュが巨大化 ── 256Kで <b>LLaMA-2: 128GB</b> / Mixtral: 32GB</span></div>
+      <div class=&quot;row&quot;><span class=&quot;ico bad&quot;>✕</span><span>単一の要約状態がなく、推論が遅い</span></div>
+    </div>
+    <div class=&quot;tcol t-m&quot;>
+      <div class=&quot;vs&quot;>効率的 / 品質不足</div><div class=&quot;ttl&quot;>🧠 純 Mamba (SSM)</div>
+      <div class=&quot;row&quot;><span class=&quot;ico good&quot;>✓</span><span>線形時間・小さな固定状態で高速</span></div>
+      <div class=&quot;row&quot;><span class=&quot;ico bad&quot;>✕</span><span>perplexityは良いが <b>IMDB/QuAC/NarrativeQA で大敗</b>（IMDB: 注意84.1 vs Mamba48.8）</span></div>
+      <div class=&quot;row&quot;><span class=&quot;ico bad&quot;>✕</span><span><b>出力フォーマットに従えない</b> → ICL / induction head の限界仮説</span></div>
+    </div>
+    <div class=&quot;tcol t-o&quot;>
+      <div class=&quot;vs&quot;>本番未到達</div><div class=&quot;ttl&quot;>🧩 既存ハイブリッド</div>
+      <div class=&quot;row&quot;><span class=&quot;ico bad&quot;>✕</span><span>H3 / StripedHyena 等は <b>≤2.7B</b> 規模</span></div>
+      <div class=&quot;row&quot;><span class=&quot;ico bad&quot;>✕</span><span>純Mamba や Mistral-7B に及ばないものも</span></div>
+      <div class=&quot;row&quot;><span class=&quot;ico good&quot;>→</span><span>本番級の Attention-SSM ハイブリッドは<b>存在しなかった</b></span></div>
+    </div>
+  </div>
+
+  <div class=&quot;axisnote reveal&quot;>
+    💡 Jamba の着想 ── <b>「2つの直交する設計を組み合わせる」</b>。① Attention 層と Mamba 層を<b>層レベルで交互配置</b>して効率と品質を両取りし、② さらに <b>MoE（Mixture of Experts）</b>で総容量を増やしつつ活性パラメータ（=計算量）は抑える。
+    純Mambaが苦手な<b>induction head</b>的な振る舞いは、わずか1/8の Attention 層を混ぜるだけで創発する、というのが鍵だった。
+  </div>
+</section>
+
+<!-- S2 -->
+<section id=&quot;s2&quot; class=&quot;wrap&quot;>
+  <div class=&quot;shead reveal&quot;><div class=&quot;snum&quot;>02</div><div>
+    <span class=&quot;en&quot;>What Jamba Enables</span><h2>Jamba が実現できること</h2>
+    <p>効率（Mamba）・品質（Attention）・容量（MoE）の三位一体で、本番運用に耐える長文脈・高スループットを単一GPU級のハードで実現した。</p>
+  </div></div>
+
+  <div class=&quot;bigstats reveal&quot;>
+    <div class=&quot;bs&quot;><div class=&quot;n&quot;>256K</div><div class=&quot;l&quot;><b>有効コンテキスト長</b><br>RULERで「本当に256Kまで効く」と確認された数少ないモデル</div></div>
+    <div class=&quot;bs&quot;><div class=&quot;n&quot;>140K</div><div class=&quot;l&quot;><b>単一80GB GPU(int8)に載る文脈長</b><br>Mixtralの2倍・Llama-2-70Bの7倍</div></div>
+    <div class=&quot;bs&quot;><div class=&quot;n&quot;>4<span class=&quot;u&quot;>GB</span></div><div class=&quot;l&quot;><b>256K時のKVキャッシュ</b><br>Mixtral 32GB → 8分の1。Largeは9GB（405B比 ~10×）</div></div>
+    <div class=&quot;bs&quot;><div class=&quot;n&quot;>~8</div><div class=&quot;l&quot;><b>層あたり平均アクティブExpert数</b><br>16エキスパート中 top-2 を選択</div></div>
+  </div>
+
+  <h3 style=&quot;margin:18px 0 10px;font-size:1.1rem&quot;>📊 ベンチマーク（Jamba v1, 52B総/12B活性）</h3>
+  <table class=&quot;reveal&quot;>
+    <thead><tr><th>ベンチマーク</th><th>Jamba</th><th>Mixtral 8×7B</th><th>Llama-2 70B</th></tr></thead>
+    <tbody>
+      <tr><td>HellaSwag</td><td class=&quot;hl&quot;>87.1</td><td>86.7</td><td>85.3</td></tr>
+      <tr><td>WinoGrande</td><td class=&quot;hl&quot;>82.5</td><td>81.2</td><td>80.2</td></tr>
+      <tr><td>MMLU</td><td>67.4</td><td>70.6</td><td>69.8</td></tr>
+      <tr><td>活性パラメータ</td><td class=&quot;hl&quot;>12B</td><td>12.9B</td><td>70B</td></tr>
+    </tbody>
+  </table>
+  <p style=&quot;color:var(--muted);font-size:.9rem;margin-top:6px&quot;>Mixtral・Llama-2-70B に匹敵する品質を、より少ない総パラメータ(52B)・同等の活性(12B)で達成。さらに長文脈スループットは桁違い。ライセンスは v0.1 が <span class=&quot;tag tagg&quot;>Apache 2.0</span>（Jamba-1.5 は Jamba Open Model License）。</p>
+
+  <h3 style=&quot;margin:24px 0 10px;font-size:1.1rem&quot;>📏 RULER 長文脈（Jamba-1.5）</h3>
+  <div class=&quot;grid3 reveal&quot;>
+    <div class=&quot;card&quot;><h3 style=&quot;font-size:1.05rem&quot;>Jamba-1.5-Large</h3><p>平均 <span class=&quot;hl&quot; style=&quot;font-size:1.3rem&quot;>95.7</span> / 256Kで 93.9。多くの競合が256Kでスコアを出せない中、有効長を確認。</p></div>
+    <div class=&quot;card&quot;><h3 style=&quot;font-size:1.05rem&quot;>Jamba-1.5-Mini</h3><p>平均 <span class=&quot;hl&quot; style=&quot;font-size:1.3rem&quot;>92.6</span> / 256Kで 86.1。Mini(52B/12B)でも長文脈が崩れない。</p></div>
+    <div class=&quot;card&quot;><h3 style=&quot;font-size:1.05rem&quot;>なぜ強い？</h3><p>Mamba層が文脈を安価に圧縮し、わずか4層のAttentionが精密な想起を担う分業。KVキャッシュが小さいから長文脈が現実的に載る。</p></div>
+  </div>
+</section>
+
+<!-- S3 -->
+<section id=&quot;s3&quot; class=&quot;wrap&quot;>
+  <div class=&quot;shead reveal&quot;><div class=&quot;snum&quot;>03</div><div>
+    <span class=&quot;en&quot;>Related Research / Lineage</span><h2>Jamba の関連研究と系譜</h2>
+    <p>Jamba は3つの研究系譜の交差点にある ── <b>SSM（Mamba）</b>、<b>Transformer の注意機構</b>、そして<b>Mixture of Experts（MoE）</b>。それを本番スケールで初めて束ねた。</p>
+  </div></div>
+
+  <div class=&quot;tracks reveal&quot;>
+    <div class=&quot;trackkey&quot;><span class=&quot;dotA&quot;></span>効率系（SSM / Mamba）</div>
+    <div class=&quot;trackkey&quot;><span class=&quot;dotB&quot;></span>容量・品質系（Attention / MoE）</div>
+  </div>
+
+  <div class=&quot;reveal&quot;>
+    <div class=&quot;tlrow&quot;>
+      <div class=&quot;yr&quot;>2017<br>–21</div>
+      <div class=&quot;tcell acol&quot;><div class=&quot;tnode a&quot;><div class=&quot;nm&quot;><span>S4 / SSM の基礎</span><span class=&quot;y&quot;>2111.00396</span></div><div class=&quot;ds&quot;>構造化状態空間モデル。長距離依存を線形時間で。Mambaの土台。</div></div></div>
+      <div class=&quot;tcell bcol&quot;>
+        <div class=&quot;tnode b&quot;><div class=&quot;nm&quot;><span>Transformer / Attention</span><span class=&quot;y&quot;>Vaswani 2017</span></div><div class=&quot;ds&quot;>自己注意。完璧な想起の源だが O(N²)。</div></div>
+        <div class=&quot;tnode b&quot;><div class=&quot;nm&quot;><span>Sparse MoE</span><span class=&quot;y&quot;>Shazeer 2017 / Switch</span></div><div class=&quot;ds&quot;>疎なエキスパート選択で、計算を増やさず容量を拡大。</div></div>
+      </div>
+    </div>
+    <div class=&quot;tlrow&quot;>
+      <div class=&quot;yr&quot;>2022<br>–23</div>
+      <div class=&quot;tcell acol&quot;><div class=&quot;tnode a&quot;><div class=&quot;nm&quot;><span>H3 / StripedHyena</span><span class=&quot;y&quot;>2212.14052</span></div><div class=&quot;ds&quot;>SSMで言語に挑む初期ハイブリッド。ただし≤2.7Bで本番未到達。「一部の層を注意に置換」の着想源。</div></div></div>
+      <div class=&quot;tcell bcol&quot;><div class=&quot;tnode b&quot;><div class=&quot;nm&quot;><span>Mixtral 8×7B</span><span class=&quot;y&quot;>2401.04088</span></div><div class=&quot;ds&quot;>疎なMoEの代表。活性12.9B。Jambaの最も近い比較対象。</div></div></div>
+    </div>
+    <div class=&quot;tlrow&quot;>
+      <div class=&quot;yr&quot;>2023<br>12月</div>
+      <div class=&quot;tcell acol&quot;><div class=&quot;tnode a&quot;><div class=&quot;nm&quot;><span>Mamba</span><span class=&quot;y&quot;>2312.00752</span></div><div class=&quot;ds&quot;>選択的SSM。入力依存パラメータで内容を選別。Jambaの効率の心臓部。</div></div></div>
+      <div class=&quot;tcell bcol&quot;></div>
+    </div>
+  </div>
+
+  <div class=&quot;arrowdown reveal&quot;>▼</div>
+  <div class=&quot;converge reveal&quot;>
+    <div class=&quot;big&quot;>🟣 JAMBA — 3系譜の融合（2024年3月）</div>
+    <p><b style=&quot;color:var(--teal)&quot;>Mamba（効率）</b> + <b style=&quot;color:var(--cyan)&quot;>Attention（品質・想起）</b> + <b style=&quot;color:var(--purple)&quot;>MoE（容量）</b> を層レベルで束ねた、<b>初の本番級 Attention-SSM ハイブリッド</b>。同年これに続き Samba・Zamba・Hymba・Bamba などハイブリッド全盛時代が到来した。</p>
+  </div>
+
+  <div class=&quot;grid2 reveal&quot; style=&quot;margin-top:22px&quot;>
+    <div class=&quot;card&quot;><h3>🆚 同時代のハイブリッド</h3><ul>
+      <li><b>Samba</b>（Microsoft）: Mamba + Sliding Window Attention、MoEなし、3.8B</li>
+      <li><b>Zamba/Zamba2</b>（Zyphra）: Mamba本体 + <b>共有</b>注意層を再利用</li>
+      <li><b>Hymba</b>（NVIDIA）: 注意とSSMを<b>同一層で並列</b>（Jambaは層を分離する逐次型）</li>
+      <li><b>Nemotron-H</b>（NVIDIA）: 注意を~8%まで削減、Mamba-2採用</li>
+    </ul></div>
+    <div class=&quot;card&quot;><h3>🔧 Jamba-1.5 が加えたもの</h3><ul>
+      <li>スケール: Large 398B/94B（9ブロック・72層）</li>
+      <li>命令チューニング（3段階・関数呼び出し・多言語）</li>
+      <li><b>ExpertsInt8</b> 量子化（A100で動く・FP8級の低遅延）</li>
+      <li>Activation Loss（巨大活性の抑制でFP16推論を安定化）</li>
+      <li>発見: ハイブリッドでは <b>Mamba-1 &amp;gt; Mamba-2</b></li>
+    </ul></div>
+  </div>
+</section>
+
+<!-- S4 -->
+<section id=&quot;s4&quot; class=&quot;wrap&quot;>
+  <div class=&quot;shead reveal&quot;><div class=&quot;snum&quot;>04</div><div>
+    <span class=&quot;en&quot;>Architecture</span><h2>Jamba のアーキテクチャ</h2>
+    <p>Jamba の本体は「Jamba ブロック」を積み重ねた構造。4つの自由度 <i>(l, a:m, e, n, K)</i> でハイブリッドの配合を決める。released model（v0.1）の config を実際にデコードして、層配置まで正確に見ていく。</p>
+  </div></div>
+
+  <div class=&quot;step reveal&quot;>
+    <div class=&quot;sk&quot;>DESIGN — 4つの自由度</div>
+    <h3>Jamba ブロックの<span class=&quot;em&quot;>設計パラメータ</span></h3>
+    <p>ブロックは「ミキサー層（Mamba か Attention）＋ FFN層（MLP か MoE）」の繰り返し。配合は次の自由度で決まる。</p>
+    <div class=&quot;dof&quot;>
+      <div class=&quot;dofcell&quot;><div class=&quot;v&quot;>l</div><div class=&quot;eq&quot;>= 8</div><div class=&quot;nm&quot;>ブロックあたりの層数</div></div>
+      <div class=&quot;dofcell&quot;><div class=&quot;v&quot;>a:m</div><div class=&quot;eq&quot;>= 1:7</div><div class=&quot;nm&quot;>Attention : Mamba 比</div></div>
+      <div class=&quot;dofcell&quot;><div class=&quot;v&quot;>e</div><div class=&quot;eq&quot;>= 2</div><div class=&quot;nm&quot;>MoEを何層ごとに置くか</div></div>
+      <div class=&quot;dofcell&quot;><div class=&quot;v&quot;>n</div><div class=&quot;eq&quot;>= 16</div><div class=&quot;nm&quot;>総エキスパート数</div></div>
+      <div class=&quot;dofcell&quot;><div class=&quot;v&quot;>K</div><div class=&quot;eq&quot;>= 2</div><div class=&quot;nm&quot;>トークンが使うtop-K</div></div>
+    </div>
+    <p>released Jamba は <b>4ブロック → 32層</b>。隠れ次元4096、MLP中間14336、語彙64K、最大位置262144(256K)、GQAは32クエリ/8KVヘッド、Mamba は d_state=16。</p>
+  </div>
+
+  <div class=&quot;step reveal&quot;>
+    <div class=&quot;sk&quot;>LAYOUT — 実際の層配置</div>
+    <h3>1ブロック = 8層の<span class=&quot;em&quot;>交互配置</span></h3>
+    <p>config（attn_period=8/offset=4, expert_period=2/offset=1）をデコードすると、<b>Attention は層 4,12,20,28 の4層だけ</b>、<b>MoE は奇数層（計16層）</b>。残り28層は Mamba。下が1ブロックの実体（×4で32層）。</p>
+    <div class=&quot;jblock reveal&quot;>
+      <div class=&quot;bt&quot;>JAMBA BLOCK（8層）— ×4 stacked = 32層</div>
+      <div class=&quot;jlayer&quot;><div class=&quot;idx&quot;>L0</div><div class=&quot;jmix mamba&quot;>Mamba</div><div class=&quot;jffn mlp&quot;>MLP</div></div>
+      <div class=&quot;jlayer&quot;><div class=&quot;idx&quot;>L1</div><div class=&quot;jmix mamba&quot;>Mamba</div><div class=&quot;jffn moe&quot;>MoE (16,top2)</div></div>
+      <div class=&quot;jlayer&quot;><div class=&quot;idx&quot;>L2</div><div class=&quot;jmix mamba&quot;>Mamba</div><div class=&quot;jffn mlp&quot;>MLP</div></div>
+      <div class=&quot;jlayer&quot;><div class=&quot;idx&quot;>L3</div><div class=&quot;jmix mamba&quot;>Mamba</div><div class=&quot;jffn moe&quot;>MoE (16,top2)</div></div>
+      <div class=&quot;jlayer&quot;><div class=&quot;idx&quot;>L4</div><div class=&quot;jmix attn&quot;>⭐ Attention (GQA 32q/8kv)</div><div class=&quot;jffn mlp&quot;>MLP</div></div>
+      <div class=&quot;jlayer&quot;><div class=&quot;idx&quot;>L5</div><div class=&quot;jmix mamba&quot;>Mamba</div><div class=&quot;jffn moe&quot;>MoE (16,top2)</div></div>
+      <div class=&quot;jlayer&quot;><div class=&quot;idx&quot;>L6</div><div class=&quot;jmix mamba&quot;>Mamba</div><div class=&quot;jffn mlp&quot;>MLP</div></div>
+      <div class=&quot;jlayer&quot;><div class=&quot;idx&quot;>L7</div><div class=&quot;jmix mamba&quot;>Mamba</div><div class=&quot;jffn moe&quot;>MoE (16,top2)</div></div>
+      <div class=&quot;jlegend&quot;>
+        <span><span class=&quot;sw&quot; style=&quot;background:rgba(94,234,212,.6)&quot;></span>Mamba ミキサー (28層)</span>
+        <span><span class=&quot;sw&quot; style=&quot;background:rgba(252,211,77,.8)&quot;></span>Attention (4層のみ)</span>
+        <span><span class=&quot;sw&quot; style=&quot;background:var(--card2);border:1px solid var(--border2)&quot;></span>MLP (16層)</span>
+        <span><span class=&quot;sw&quot; style=&quot;background:rgba(196,163,255,.6)&quot;></span>MoE (16層)</span>
+      </div>
+    </div>
+    <div class=&quot;blocknote&quot;>各層は <b>RMSNorm → ミキサー → 残差</b> と <b>RMSNorm → FFN → 残差</b> のpre-norm構造。Attentionはブロックに1つだけで、KVキャッシュを劇的に削減する。</div>
+  </div>
+
+  <div class=&quot;step reveal&quot;>
+    <div class=&quot;sk&quot;>FINDINGS — 設計から得た知見</div>
+    <h3>Jamba が明らかにした<span class=&quot;em&quot;>3つの発見</span></h3>
+    <div class=&quot;grid3&quot; style=&quot;margin-top:8px&quot;>
+      <div class=&quot;card&quot; style=&quot;padding:18px&quot;><h3 style=&quot;font-size:1rem&quot;>📍 位置エンコ不要</h3><p style=&quot;font-size:.86rem&quot;>Attention層の前に置かれた Mamba 層が<b>暗黙の位置情報</b>を与えるため、RoPE等を入れても結果はほぼ同じ。Jambaは明示的な位置情報を一切使わない。</p></div>
+      <div class=&quot;card&quot; style=&quot;padding:18px&quot;><h3 style=&quot;font-size:1rem&quot;>⚖️ a:m 比は鈍感</h3><p style=&quot;font-size:.86rem&quot;>1:3 と 1:7 で<b>性能差はほぼゼロ</b>。ならば計算効率の良い 1:7 を採用。ハイブリッドは純Attention・純Mambaの両方を上回る。</p></div>
+      <div class=&quot;card&quot; style=&quot;padding:18px&quot;><h3 style=&quot;font-size:1rem&quot;>🔁 induction head 創発</h3><p style=&quot;font-size:.86rem&quot;>わずか <b>1/8 の Attention 層</b>でも induction head が創発（1.3Bで12個確認）。少量の注意がICL能力を呼び込む。RMSNormが大規模学習を安定化。</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- S5 -->
+<section id=&quot;s5&quot; class=&quot;wrap&quot;>
+  <div class=&quot;shead reveal&quot;><div class=&quot;snum&quot;>05</div><div>
+    <span class=&quot;en&quot;>What to Study Next</span><h2>次に調べるべき技術要素・キーワード</h2>
+    <p>Jamba は「ハイブリッド全盛時代」の幕を開けた。後継・量子化・そして他社の対照的なハイブリッド設計へ。</p>
+  </div></div>
+
+  <div class=&quot;feature reveal&quot;>
+    <div class=&quot;ft&quot;><span class=&quot;star&quot;>★ 後継・量産化の鍵</span><h3>Jamba-1.5 と ExpertsInt8</h3><span class=&quot;tag tagp&quot;>arXiv:2408.12570</span></div>
+    <p>Jamba-1.5 は同じレシピを <b>Large 398B/94B</b> までスケールし、命令チューニングを施した本番モデル。サービングの肝が <b>ExpertsInt8</b> 量子化。</p>
+    <div class=&quot;pts&quot;>
+      <div>重みの<b>85%超がMoE層</b>に集中 → そこをINT8で保存</div>
+      <div>vLLMのfused_moeカーネル内で<b>BF16に復号</b>、オーバーヘッド極小</div>
+      <div>キャリブレーション不要・<b>A100で動く</b>（FP8はH100限定）</div>
+      <div>FP8並みの低遅延、GPTQを上回る品質</div>
+    </div>
+  </div>
+
+  <div class=&quot;kwgrid reveal&quot;>
+    <div class=&quot;kwcat&quot;><div class=&quot;ch&quot;>🔀 他のハイブリッド（比較対象）</div><div class=&quot;csub&quot;>設計思想の違いを横並びで学ぶ</div>
+      <div class=&quot;kwitem&quot;><span class=&quot;knm&quot;>Samba</span><span class=&quot;kds&quot;>Mamba + Sliding Window Attention。MoEなしの最小逐次ハイブリッド<span class=&quot;kid&quot;>Microsoft · 2406.07522</span></span></div>
+      <div class=&quot;kwitem&quot;><span class=&quot;knm&quot;>Hymba</span><span class=&quot;kds&quot;>注意とSSMを同一層で<b>並列</b>に。Jambaの逐次型と対照的<span class=&quot;kid&quot;>NVIDIA · 2411.13676</span></span></div>
+      <div class=&quot;kwitem&quot;><span class=&quot;knm&quot;>Zamba / Zamba2</span><span class=&quot;kds&quot;>Mamba本体 + 共有注意層。パラメータ効率重視<span class=&quot;kid&quot;>Zyphra · 2405.16712</span></span></div>
+      <div class=&quot;kwitem&quot;><span class=&quot;knm&quot;>Nemotron-H / Bamba</span><span class=&quot;kds&quot;>注意~8%のMamba-2ハイブリッド / IBMの9B<span class=&quot;kid&quot;>2504.03624</span></span></div>
+    </div>
+    <div class=&quot;kwcat&quot;><div class=&quot;ch&quot;>🧱 基盤要素</div><div class=&quot;csub&quot;>Jambaを構成する技術の深掘り</div>
+      <div class=&quot;kwitem&quot;><span class=&quot;knm&quot;>Mamba / SSD</span><span class=&quot;kds&quot;>選択的SSM。ハイブリッドではMamba-1が優位という発見も<span class=&quot;kid&quot;>2312.00752 / 2405.21060</span></span></div>
+      <div class=&quot;kwitem&quot;><span class=&quot;knm&quot;>Mixture of Experts</span><span class=&quot;kds&quot;>Switch / Mixtral。疎なルーティングで容量を拡大<span class=&quot;kid&quot;>2401.04088</span></span></div>
+      <div class=&quot;kwitem&quot;><span class=&quot;knm&quot;>GQA</span><span class=&quot;kds&quot;>Grouped-Query Attention。KVヘッド共有でキャッシュ削減</span></div>
+      <div class=&quot;kwitem&quot;><span class=&quot;knm&quot;>量子化サービング</span><span class=&quot;kds&quot;>ExpertsInt8 / FP8 / GPTQ。MoEの実運用最適化</span></div>
+    </div>
+  </div>
+
+  <div class=&quot;openprob reveal&quot;>
+    <h3>🔬 未解決の問い</h3>
+    <div class=&quot;pp&quot;><div class=&quot;q&quot;>① 最適な Attention:Mamba 比は？</div><div class=&quot;a&quot;>Jambaは1:3≈1:7、Nemotron-Hは~1:12まで攻めた。超大規模での最適比は未確定。Attention層を<b>どこに置くか</b>も研究余地。</div></div>
+    <div class=&quot;pp&quot;><div class=&quot;q&quot;>② MoE と SSM は大規模で相性が良いのか？</div><div class=&quot;a&quot;>Jambaは「良い」を示したが、MoEと状態空間モデルの相互作用のメカニズムは未解明。</div></div>
+    <div class=&quot;pp&quot;><div class=&quot;q&quot;>③ なぜ ハイブリッドでは Mamba-1 &amp;gt; Mamba-2 なのか？</div><div class=&quot;a&quot;>全注意層が大域文脈を集約するため、Mamba-2の大きな状態の利点が薄れる、という仮説止まり。ICL/induction headがSSMで創発するかも未解明。</div></div>
+  </div>
+</section>
+
+<footer>
+  <p>本インフォグラフィックは Jamba 原論文（arXiv:2403.19887）・Jamba-1.5（2408.12570）および公開config・モデルカードの調査に基づき作成。数値は原典に準拠。</p>
+  <div class=&quot;refs&quot;>
+    <a href=&quot;https://arxiv.org/abs/2403.19887&quot;>Jamba 2403.19887</a>
+    <a href=&quot;https://arxiv.org/abs/2408.12570&quot;>Jamba-1.5 2408.12570</a>
+    <a href=&quot;https://arxiv.org/abs/2312.00752&quot;>Mamba 2312.00752</a>
+    <a href=&quot;https://arxiv.org/abs/2401.04088&quot;>Mixtral 2401.04088</a>
+    <a href=&quot;https://huggingface.co/ai21labs/Jamba-v0.1&quot;>HF: Jamba-v0.1</a>
+  </div>
+  <div class=&quot;crosslink&quot;>
+    <a href=&quot;./Samba-インフォグラフィック.html&quot;>→ Samba を見る</a>
+    <a href=&quot;./Hymba-インフォグラフィック.html&quot;>→ Hymba を見る</a>
+  </div>
+  <p style=&quot;margin-top:14px;color:var(--dim)&quot;>🟣 Attention–Mamba–MoE Hybrid — generated for technical understanding</p>
+</footer>
+
+<script>
+  document.body.classList.add('js');
+  const prog=document.getElementById('progress');
+  const io=new IntersectionObserver((es)=>{es.forEach(e=>{if(e.isIntersecting){e.target.classList.add('in');io.unobserve(e.target);}})},{threshold:.12});
+  document.querySelectorAll('.reveal').forEach(el=>io.observe(el));
+  const secs=[...document.querySelectorAll('section[id]')],links=[...document.querySelectorAll('nav a')];
+  function onScroll(){const st=document.documentElement.scrollTop||document.body.scrollTop;const h=document.documentElement.scrollHeight-document.documentElement.clientHeight;prog.style.width=(st/h*100)+'%';let cur=secs[0]?secs[0].id:'';for(const s of secs){if(s.getBoundingClientRect().top<=120)cur=s.id;}links.forEach(l=>l.classList.toggle('active',l.getAttribute('href')==='#'+cur));}
+  document.addEventListener('scroll',onScroll,{passive:true});onScroll();
+</script>
+</body>
+</html>
+"></iframe>
+    <iframe class="frame" id="f-samba" title="Samba インフォグラフィック" loading="lazy" srcdoc="<!DOCTYPE html>
+<html lang=&quot;ja&quot;>
+<head>
+<meta charset=&quot;UTF-8&quot;>
+<meta name=&quot;viewport&quot; content=&quot;width=device-width, initial-scale=1.0&quot;>
+<title>Samba 技術解説インフォグラフィック — Mamba + Sliding Window Attention</title>
+<style>
+  :root{
+    --bg:#060c12;--bg2:#0b141f;--card:#0f1a28;--card2:#142235;--elev:#1b2e47;
+    --border:#23384f;--border2:#2f4d6e;--text:#e6f0fa;--muted:#9fb6cf;--dim:#6781a0;
+    --teal:#5eead4;--cyan:#56c9f7;--blue:#60a5fa;--green:#6ee7a8;--purple:#a5b4fc;--amber:#fcd34d;--red:#fb7185;
+    --grad:linear-gradient(120deg,#6ee7a8 0%,#5eead4 35%,#56c9f7 70%,#60a5fa 100%);
+    --grad2:linear-gradient(120deg,#5eead4,#56c9f7);
+    --mono:'SFMono-Regular',Consolas,'Liberation Mono',Menlo,monospace;
+    --math:'Cambria Math','Latin Modern Math',Cambria,Georgia,serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{scroll-behavior:smooth;scroll-padding-top:70px}
+  body{background:var(--bg);color:var(--text);font-family:'Segoe UI','Hiragino Kaku Gothic ProN','Yu Gothic UI',Meiryo,system-ui,sans-serif;line-height:1.75;font-size:16px;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+  body::before{content:&quot;&quot;;position:fixed;inset:0;z-index:-2;background:radial-gradient(ellipse 80% 50% at 14% -5%,rgba(94,234,212,.09),transparent 60%),radial-gradient(ellipse 70% 50% at 90% 5%,rgba(86,201,247,.12),transparent 60%),radial-gradient(ellipse 90% 60% at 50% 110%,rgba(110,231,168,.07),transparent 60%)}
+  body::after{content:&quot;&quot;;position:fixed;inset:0;z-index:-1;opacity:.5;background-image:radial-gradient(rgba(120,150,180,.06) 1px,transparent 1px);background-size:38px 38px}
+  a{color:var(--cyan);text-decoration:none}a:hover{text-decoration:underline}
+  #progress{position:fixed;top:0;left:0;height:3px;width:0;z-index:100;background:var(--grad);box-shadow:0 0 12px rgba(86,201,247,.6)}
+  nav{position:sticky;top:0;z-index:90;backdrop-filter:blur(12px);background:rgba(6,12,18,.8);border-bottom:1px solid var(--border)}
+  nav .navin{max-width:1180px;margin:0 auto;display:flex;align-items:center;gap:6px;padding:10px 22px;flex-wrap:wrap}
+  nav .brand{font-weight:800;letter-spacing:.5px;margin-right:auto;font-size:1.05rem;display:flex;align-items:center;gap:8px}
+  nav .brand b{background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
+  nav a{color:var(--muted);font-size:.82rem;padding:6px 11px;border-radius:8px;font-weight:600;transition:.18s;white-space:nowrap}
+  nav a:hover{color:var(--text);background:var(--card2);text-decoration:none}
+  nav a.active{color:#02121c;background:var(--grad2)}
+  .wrap{max-width:1180px;margin:0 auto;padding:0 22px}
+  section{padding:64px 0;border-bottom:1px solid rgba(35,56,79,.5)}
+  .hero{padding:84px 0 64px;text-align:center;position:relative}
+  .logo{font-size:3rem;filter:drop-shadow(0 0 22px rgba(86,201,247,.45));animation:float 5s ease-in-out infinite}
+  @keyframes float{50%{transform:translateY(-10px)}}
+  .hero h1{font-size:clamp(2.6rem,7vw,5rem);font-weight:900;letter-spacing:-1px;line-height:1.02;margin:14px 0 6px}
+  .hero h1 span{background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
+  .hero .sub{font-size:clamp(1rem,2.4vw,1.35rem);color:var(--muted);font-weight:500;margin-bottom:8px}
+  .hero .paper{display:inline-flex;gap:10px;align-items:center;flex-wrap:wrap;justify-content:center;margin-top:18px;font-size:.9rem}
+  .hero .paper .pill{background:var(--card);border:1px solid var(--border);border-radius:999px;padding:5px 14px;color:var(--muted)}
+  .thesis{max-width:840px;margin:30px auto 0;font-size:1.16rem;line-height:1.85;color:var(--text);background:linear-gradient(135deg,rgba(94,234,212,.07),rgba(86,201,247,.07));border:1px solid var(--border);border-left:4px solid var(--cyan);border-radius:14px;padding:22px 26px}
+  .thesis b{background:var(--grad2);-webkit-background-clip:text;background-clip:text;color:transparent;font-weight:800}
+  .heroStats{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;max-width:900px;margin:34px auto 0}
+  .heroStats .s{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:18px 10px}
+  .heroStats .n{font-size:1.8rem;font-weight:900;background:var(--grad2);-webkit-background-clip:text;background-clip:text;color:transparent;line-height:1}
+  .heroStats .l{font-size:.74rem;color:var(--muted);margin-top:7px;letter-spacing:.3px}
+  .shead{display:flex;align-items:flex-start;gap:18px;margin-bottom:34px}
+  .snum{flex:none;width:60px;height:60px;border-radius:16px;display:grid;place-items:center;font-size:1.5rem;font-weight:900;background:linear-gradient(135deg,rgba(94,234,212,.16),rgba(86,201,247,.16));border:1px solid var(--border2);color:var(--cyan);font-family:var(--mono)}
+  .shead h2{font-size:clamp(1.6rem,3.6vw,2.4rem);font-weight:850;letter-spacing:-.5px;line-height:1.12}
+  .shead .en{color:var(--dim);font-size:.85rem;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;display:block;margin-bottom:3px}
+  .shead p{color:var(--muted);margin-top:8px;max-width:780px}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+  .grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}
+  .card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:24px;transition:transform .2s,border-color .2s,box-shadow .2s}
+  .card:hover{transform:translateY(-4px);border-color:var(--border2);box-shadow:0 14px 40px rgba(0,0,0,.4)}
+  .card h3{font-size:1.16rem;font-weight:750;margin-bottom:10px;display:flex;align-items:center;gap:10px}
+  .card p{color:var(--muted);font-size:.94rem}
+  .card ul{list-style:none;margin-top:10px}
+  .card ul li{color:var(--muted);font-size:.92rem;padding:5px 0 5px 22px;position:relative}
+  .card ul li::before{content:&quot;▹&quot;;position:absolute;left:0;color:var(--cyan)}
+  .tag{display:inline-block;font-family:var(--mono);font-size:.72rem;padding:2px 9px;border-radius:6px;background:var(--elev);border:1px solid var(--border2);color:var(--cyan);font-weight:600}
+  .tagp{color:var(--purple)}.tagk{color:var(--blue)}.taga{color:var(--amber)}.tagg{color:var(--green)}
+  .tension{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:8px}
+  .tcol{padding:24px;border-radius:16px;border:1px solid var(--border)}
+  .tcol .ttl{font-weight:800;font-size:1.06rem;margin-bottom:3px}
+  .tcol .vs{font-size:.74rem;letter-spacing:1px;text-transform:uppercase;font-weight:700;margin-bottom:13px}
+  .t-x{background:linear-gradient(160deg,rgba(96,165,250,.09),transparent);border-color:rgba(96,165,250,.3)}.t-x .vs{color:var(--blue)}
+  .t-m{background:linear-gradient(160deg,rgba(94,234,212,.09),transparent);border-color:rgba(94,234,212,.3)}.t-m .vs{color:var(--teal)}
+  .t-s{background:linear-gradient(160deg,rgba(165,180,252,.09),transparent);border-color:rgba(165,180,252,.3)}.t-s .vs{color:var(--purple)}
+  .tcol .row{display:flex;gap:9px;padding:6px 0;font-size:.88rem;color:var(--muted);align-items:flex-start}
+  .tcol .row b{color:var(--text);font-weight:700}.tcol .ico{flex:none;width:18px;text-align:center}
+  .good{color:var(--green)}.bad{color:var(--red)}
+  .axisnote{margin-top:18px;padding:18px 22px;border-radius:14px;background:var(--card2);border:1px dashed var(--border2);font-size:.96rem;color:var(--muted)}
+  .axisnote b{color:var(--cyan)}
+  .bigstats{display:grid;grid-template-columns:repeat(4,1fr);gap:18px;margin-bottom:24px}
+  .bs{background:linear-gradient(160deg,var(--card2),var(--card));border:1px solid var(--border);border-radius:16px;padding:24px 20px;position:relative;overflow:hidden}
+  .bs::before{content:&quot;&quot;;position:absolute;top:-30px;right:-30px;width:90px;height:90px;border-radius:50%;background:var(--grad2);opacity:.1;filter:blur(6px)}
+  .bs .n{font-size:2.3rem;font-weight:900;line-height:1;background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
+  .bs .u{font-size:1rem;font-weight:700;color:var(--muted)}
+  .bs .l{margin-top:9px;font-size:.85rem;color:var(--muted)}.bs .l b{color:var(--text)}
+  /* extrapolation bar */
+  .extrap{margin:18px 0;background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:22px}
+  .extrap .et{font-weight:750;margin-bottom:14px;font-size:1rem}
+  .exbar{display:flex;height:46px;border-radius:10px;overflow:hidden;border:1px solid var(--border2);font-size:.82rem;font-weight:700}
+  .exbar .seg{display:flex;align-items:center;justify-content:center;text-align:center;padding:0 8px;color:#02121c}
+  .ex-train{background:linear-gradient(90deg,#3a8f7e,#5eead4);flex:0 0 16%}
+  .ex-recall{background:linear-gradient(90deg,#2a7fb8,#56c9f7);flex:1}
+  .ex-ppl{background:linear-gradient(90deg,#3957a8,#60a5fa);flex:0 0 22%}
+  .exlabels{display:flex;justify-content:space-between;font-family:var(--mono);font-size:.74rem;color:var(--dim);margin-top:6px}
+  table{width:100%;border-collapse:collapse;margin:14px 0;font-size:.9rem;border-radius:12px;overflow:hidden}
+  table th,table td{padding:11px 14px;text-align:left;border-bottom:1px solid var(--border)}
+  table thead th{background:var(--card2);font-size:.78rem;letter-spacing:.4px;color:var(--muted);text-transform:uppercase}
+  table tbody tr{background:var(--bg2)}table tbody tr:hover{background:var(--card2)}
+  table td .mono{font-family:var(--mono);font-size:.85rem}.hl{color:var(--cyan);font-weight:700}
+  .tracks{display:flex;justify-content:center;gap:14px;margin-bottom:22px;flex-wrap:wrap}
+  .trackkey{display:flex;align-items:center;gap:8px;font-size:.84rem;color:var(--muted);background:var(--card);border:1px solid var(--border);padding:6px 13px;border-radius:999px}
+  .dotA{width:11px;height:11px;border-radius:50%;background:var(--teal)}.dotB{width:11px;height:11px;border-radius:50%;background:var(--blue)}
+  .tlrow{display:grid;grid-template-columns:64px 1fr 1fr;gap:14px;align-items:stretch;padding:7px 0}
+  .yr{display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-weight:800;font-size:.92rem;color:var(--cyan);background:var(--card2);border:1px solid var(--border2);border-radius:10px}
+  .tcell{display:flex;flex-direction:column;gap:10px}
+  .tnode{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:13px 15px;transition:.18s}
+  .tnode:hover{transform:translateX(4px);border-color:var(--border2)}
+  .tnode.a{border-left:3px solid var(--teal)}.tnode.b{border-left:3px solid var(--blue)}
+  .tnode .nm{font-weight:750;font-size:.96rem;display:flex;justify-content:space-between;gap:8px;align-items:baseline;flex-wrap:wrap}
+  .tnode .nm .y{font-family:var(--mono);font-size:.68rem;color:var(--dim)}
+  .tnode .ds{color:var(--muted);font-size:.84rem;margin-top:3px}
+  .converge{margin-top:14px;background:linear-gradient(120deg,rgba(94,234,212,.13),rgba(86,201,247,.13),rgba(96,165,250,.13));border:1px solid var(--border2);border-radius:16px;padding:22px 26px;text-align:center}
+  .converge .big{font-size:1.5rem;font-weight:900;background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
+  .converge p{color:var(--muted);margin-top:6px;max-width:780px;margin-inline:auto;font-size:.94rem}
+  .arrowdown{text-align:center;font-size:1.6rem;color:var(--border2);margin:2px 0}
+  .step{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:26px;margin-bottom:20px;position:relative}
+  .step .sk{position:absolute;top:-12px;left:22px;font-family:var(--mono);font-size:.74rem;font-weight:700;color:#02121c;background:var(--grad2);padding:4px 12px;border-radius:7px}
+  .step h3{font-size:1.3rem;font-weight:800;margin:6px 0 12px}
+  .step h3 .em{background:var(--grad2);-webkit-background-clip:text;background-clip:text;color:transparent}
+  .step p{color:var(--muted)}.step p b{color:var(--text)}
+  /* samba super-block */
+  .sblock{max-width:560px;margin:10px auto;display:flex;flex-direction:column;align-items:center;gap:0}
+  .superlabel{align-self:stretch;text-align:center;font-family:var(--mono);font-size:.74rem;color:var(--cyan);border:1px dashed var(--border2);border-radius:10px;padding:6px;margin-bottom:8px;letter-spacing:.5px}
+  .snode{width:100%;border-radius:11px;padding:13px 16px;border:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;gap:10px}
+  .snode .lab{font-weight:700;font-size:.96rem}
+  .snode .role{font-size:.78rem;color:var(--muted)}
+  .snode.mamba{background:linear-gradient(90deg,rgba(94,234,212,.16),rgba(94,234,212,.04));border-color:rgba(94,234,212,.4)}.snode.mamba .lab{color:var(--teal)}
+  .snode.swa{background:linear-gradient(90deg,rgba(86,201,247,.16),rgba(86,201,247,.04));border-color:rgba(86,201,247,.45)}.snode.swa .lab{color:var(--cyan)}
+  .snode.mlp{background:var(--card2)}.snode.mlp .lab{color:var(--muted)}
+  .sarrow{color:var(--border2);font-size:1.2rem;line-height:1.4}
+  .repeat{font-size:.82rem;color:var(--dim);margin-top:8px;font-family:var(--mono)}
+  .blocknote{font-size:.85rem;color:var(--muted);margin-top:14px;background:var(--card2);border:1px solid var(--border);border-radius:11px;padding:14px 16px}
+  .blocknote b{color:var(--text)}
+  .eq{font-family:var(--math);background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:16px 20px;margin:12px 0;font-size:1.05rem;text-align:center;overflow-x:auto;line-height:2}
+  .eq i{font-style:italic;color:var(--cyan)}.eq .op{color:var(--muted)}.eq small{font-size:.72em;color:var(--muted);display:block;font-family:var(--mono);margin-top:6px}
+  .feature{background:linear-gradient(120deg,rgba(94,234,212,.12),rgba(86,201,247,.1));border:1px solid var(--border2);border-radius:18px;padding:28px;margin-bottom:22px}
+  .feature .ft{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:8px}
+  .feature h3{font-size:1.35rem;font-weight:850}
+  .feature .star{background:var(--cyan);color:#02121c;font-size:.7rem;font-weight:800;padding:3px 10px;border-radius:999px;letter-spacing:.5px}
+  .feature p{color:var(--muted);font-size:.95rem}
+  .feature .pts{display:grid;grid-template-columns:1fr 1fr;gap:10px 22px;margin-top:14px}
+  .feature .pts div{font-size:.9rem;color:var(--muted);padding-left:20px;position:relative}
+  .feature .pts div::before{content:&quot;◆&quot;;position:absolute;left:0;color:var(--cyan);font-size:.7rem;top:5px}
+  .feature .pts b{color:var(--text)}
+  .kwgrid{display:grid;grid-template-columns:repeat(2,1fr);gap:18px}
+  .kwcat{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:22px}
+  .kwcat .ch{font-weight:800;font-size:1.1rem;margin-bottom:4px;display:flex;align-items:center;gap:9px}
+  .kwcat .csub{color:var(--dim);font-size:.82rem;margin-bottom:14px}
+  .kwitem{display:flex;gap:11px;padding:9px 0;border-top:1px solid var(--border);align-items:baseline}
+  .kwitem:first-of-type{border-top:none}
+  .kwitem .knm{font-weight:700;font-size:.92rem;min-width:122px;flex:none}
+  .kwitem .kds{color:var(--muted);font-size:.84rem}
+  .kwitem .kid{font-family:var(--mono);font-size:.7rem;color:var(--dim);display:block;margin-top:2px}
+  .openprob{background:linear-gradient(160deg,rgba(96,165,250,.08),transparent);border:1px solid rgba(96,165,250,.3);border-radius:16px;padding:24px;margin-top:22px}
+  .openprob h3{color:var(--blue);font-size:1.22rem;margin-bottom:6px;display:flex;align-items:center;gap:9px}
+  .openprob .pp{margin-top:13px}
+  .openprob .pp .q{font-weight:750;color:var(--text);font-size:.94rem}
+  .openprob .pp .a{color:var(--muted);font-size:.87rem;margin-top:3px}
+  footer{padding:50px 22px 70px;text-align:center;color:var(--dim);font-size:.85rem;max-width:980px;margin:0 auto}
+  footer .refs{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin:16px 0}
+  footer .refs a{font-family:var(--mono);font-size:.74rem;background:var(--card);border:1px solid var(--border);padding:4px 10px;border-radius:7px;color:var(--muted)}
+  footer .refs a:hover{border-color:var(--border2);color:var(--cyan);text-decoration:none}
+  .crosslink{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-top:18px}
+  .crosslink a{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:8px 16px;color:var(--muted);font-size:.85rem;font-weight:600}
+  .crosslink a:hover{border-color:var(--cyan);color:var(--text);text-decoration:none}
+  body.js .reveal{opacity:0;transform:translateY(26px);transition:opacity .6s ease,transform .6s ease}
+  body.js .reveal.in{opacity:1;transform:none}
+  @media(max-width:860px){
+    .grid2,.grid3,.heroStats,.bigstats,.tension,.feature .pts,.kwgrid{grid-template-columns:1fr}
+    .heroStats,.bigstats{grid-template-columns:1fr 1fr}
+    .tlrow{grid-template-columns:48px 1fr}.tlrow .tcell.bcol{grid-column:2}
+    nav .navin{padding:8px 14px}.wrap{padding:0 15px}
+  }
+</style>
+</head>
+<body>
+<div id=&quot;progress&quot;></div>
+<nav><div class=&quot;navin&quot;>
+  <div class=&quot;brand&quot;>🩵 <b>Samba</b></div>
+  <a href=&quot;#s1&quot;>課題</a><a href=&quot;#s2&quot;>実現できること</a><a href=&quot;#s3&quot;>関連研究</a><a href=&quot;#s4&quot;>アーキテクチャ</a><a href=&quot;#s5&quot;>次のキーワード</a>
+</div></nav>
+
+<header class=&quot;hero wrap&quot;>
+  <div class=&quot;logo&quot;>🩵♾️</div>
+  <h1>Samba <span>:</span><br><span>Mamba + Sliding Window Attention</span></h1>
+  <div class=&quot;sub&quot;>最もシンプルな層レベルハイブリッドで「無限文脈」に挑む</div>
+  <div class=&quot;paper&quot;>
+    <span class=&quot;pill&quot;>Microsoft + UIUC</span><span class=&quot;pill&quot;>arXiv:2406.07522</span><span class=&quot;pill&quot;>2024年6月</span><span class=&quot;pill&quot;>ICLR 2025</span>
+  </div>
+  <div class=&quot;thesis&quot;>
+    Samba の哲学はただ一つ ── <b>「最もシンプルに SSM と注意を調和させる」</b>。
+    Mamba が<b>無限の履歴を安価に圧縮</b>し（線形・再帰）、Sliding Window Attention が<b>直近の窓で精密に想起</b>する（線形・有界窓）。
+    両者を層レベルで交互に積むだけで、<b>4Kで学習して256Kまで完璧な記憶で外挿</b>し、最大1Mまでperplexityが改善する。
+  </div>
+  <div class=&quot;heroStats reveal&quot;>
+    <div class=&quot;s&quot;><div class=&quot;n&quot;>4K → 256K</div><div class=&quot;l&quot;>学習長 → 完璧な記憶で外挿</div></div>
+    <div class=&quot;s&quot;><div class=&quot;n&quot;>1M</div><div class=&quot;l&quot;>perplexity改善が続く文脈長</div></div>
+    <div class=&quot;s&quot;><div class=&quot;n&quot;>3.73×</div><div class=&quot;l&quot;>128Kプロンプト処理スループット</div></div>
+    <div class=&quot;s&quot;><div class=&quot;n&quot;>3.8B</div><div class=&quot;l&quot;>最大モデル / 3.2Tトークン学習</div></div>
+  </div>
+</header>
+
+<!-- S1 -->
+<section id=&quot;s1&quot; class=&quot;wrap&quot;>
+  <div class=&quot;shead reveal&quot;><div class=&quot;snum&quot;>01</div><div>
+    <span class=&quot;en&quot;>Before Samba</span><h2>Samba 登場前の課題</h2>
+    <p>「無限の文脈長を効率的にモデル化する」ことは長年の難問だった。既存手法は<b>二次の計算量</b>か<b>限定的な長さ外挿</b>のどちらかに苦しんでいた。</p>
+  </div></div>
+
+  <div class=&quot;tension reveal&quot;>
+    <div class=&quot;tcol t-x&quot;>
+      <div class=&quot;vs&quot;>高品質 / 外挿不能</div><div class=&quot;ttl&quot;>⚡ 純 Attention</div>
+      <div class=&quot;row&quot;><span class=&quot;ico good&quot;>✓</span><span>長距離依存を捉え、並列学習が容易</span></div>
+      <div class=&quot;row&quot;><span class=&quot;ico bad&quot;>✕</span><span><b>O(N²)</b> + KVキャッシュ</span></div>
+      <div class=&quot;row&quot;><span class=&quot;ico bad&quot;>✕</span><span>学習長を超えて<b>外挿できない</b>。全注意層が1つあるだけで16Kでperplexityが爆発</span></div>
+    </div>
+    <div class=&quot;tcol t-m&quot;>
+      <div class=&quot;vs&quot;>効率的 / 想起が苦手</div><div class=&quot;ttl&quot;>🧠 純 Mamba</div>
+      <div class=&quot;row&quot;><span class=&quot;ico good&quot;>✓</span><span>線形時間・時間依存の再帰構造を捉える</span></div>
+      <div class=&quot;row&quot;><span class=&quot;ico bad&quot;>✕</span><span><b>マルコフ性</b>ゆえ精密な記憶想起が苦手（SQuADで顕著）</span></div>
+      <div class=&quot;row&quot;><span class=&quot;ico bad&quot;>✕</span><span>極端に長いと外挿も頭打ち（1Mでppl緩やかに悪化）</span></div>
+    </div>
+    <div class=&quot;tcol t-s&quot;>
+      <div class=&quot;vs&quot;>局所のみ</div><div class=&quot;ttl&quot;>🪟 SWA 単独</div>
+      <div class=&quot;row&quot;><span class=&quot;ico good&quot;>✓</span><span>線形コスト・直近の窓を精密に</span></div>
+      <div class=&quot;row&quot;><span class=&quot;ico bad&quot;>✕</span><span><b>窓の外を想起できない</b>（4Kより前は思い出せない）</span></div>
+      <div class=&quot;row&quot;><span class=&quot;ico bad&quot;>✕</span><span>passkey精度が~30%で頭打ち</span></div>
+    </div>
+  </div>
+
+  <div class=&quot;axisnote reveal&quot;>
+    💡 Samba の着想 ── 役割分担を<b>最もシンプルな形</b>で実装する。Mamba は「全履歴を固定状態に圧縮する無限記憶」、SWA は「直近の窓を高精細に取り出す精密検索」。
+    複雑な仕掛け（MoEも並列ヘッドも）は使わず、<b>層を交互に積むだけ</b>で、線形時間のまま無限長へ外挿する。
+  </div>
+</section>
+
+<!-- S2 -->
+<section id=&quot;s2&quot; class=&quot;wrap&quot;>
+  <div class=&quot;shead reveal&quot;><div class=&quot;snum&quot;>02</div><div>
+    <span class=&quot;en&quot;>What Samba Enables</span><h2>Samba が実現できること</h2>
+    <p>「短く学習して、遥か遠くまで外挿する」── これが Samba の代名詞。少ない注意容量で、長文脈の品質とスループットを両立する。</p>
+  </div></div>
+
+  <div class=&quot;extrap reveal&quot;>
+    <div class=&quot;et&quot;>🎯 Train Short, Extrapolate Far ── 4Kで学習し、256Kまで完璧な記憶</div>
+    <div class=&quot;exbar&quot;>
+      <div class=&quot;seg ex-train&quot;>学習 4K</div>
+      <div class=&quot;seg ex-recall&quot;>外挿 256K（passkey 完璧な記憶想起・命令調整わずか500ステップ）</div>
+      <div class=&quot;seg ex-ppl&quot;>→ 1M ppl改善</div>
+    </div>
+    <div class=&quot;exlabels&quot;><span>4K</span><span>64K</span><span>128K</span><span>256K</span><span>1M tokens</span></div>
+  </div>
+
+  <div class=&quot;bigstats reveal&quot;>
+    <div class=&quot;bs&quot;><div class=&quot;n&quot;>3.73<span class=&quot;u&quot;>×</span></div><div class=&quot;l&quot;><b>プロンプト処理スループット</b><br>128K長。vs Llama-3(GQA)、単一A100</div></div>
+    <div class=&quot;bs&quot;><div class=&quot;n&quot;>3.64<span class=&quot;u&quot;>×</span></div><div class=&quot;l&quot;><b>64Kトークン生成の高速化</b><br>無限ストリーミング生成時</div></div>
+    <div class=&quot;bs&quot;><div class=&quot;n&quot;>+18.1<span class=&quot;u&quot;>%</span></div><div class=&quot;l&quot;><b>GSM8K 絶対精度向上</b><br>同一データ学習のTFM++比</div></div>
+    <div class=&quot;bs&quot;><div class=&quot;n&quot;>71.2</div><div class=&quot;l&quot;><b>MMLU（3.8B base）</b><br>8Bまでのオープンモデルを凌駕</div></div>
+  </div>
+
+  <h3 style=&quot;margin:18px 0 10px;font-size:1.1rem&quot;>📊 命令チューニング版 vs Phi-3-mini-4K-instruct</h3>
+  <table class=&quot;reveal&quot;>
+    <thead><tr><th>ベンチマーク</th><th>Samba-3.8B-IT</th><th>Phi-3-mini-4K-it</th></tr></thead>
+    <tbody>
+      <tr><td>MMLU (5-shot)</td><td class=&quot;hl&quot;>71.9</td><td>68.8</td></tr>
+      <tr><td>GSM8K (8-shot CoT)</td><td class=&quot;hl&quot;>87.6</td><td>82.5</td></tr>
+      <tr><td>HumanEval (pass@1)</td><td class=&quot;hl&quot;>62.8</td><td>58.5</td></tr>
+      <tr><td>GovReport (長文 ROUGE-L)</td><td class=&quot;hl&quot;>18.9</td><td>14.4</td></tr>
+      <tr><td>SQuALITY (長文 ROUGE-L)</td><td>21.2</td><td class=&quot;hl&quot;>21.6</td></tr>
+    </tbody>
+  </table>
+  <p style=&quot;color:var(--muted);font-size:.88rem;margin-top:6px&quot;>5項目中4勝。唯一の負けは SQuALITY（21.2 vs 21.6）とごく僅差。1.7B規模の比較でも Samba 平均54.33 が Mamba-MLP・Llama-3・Mistral を上回る。</p>
+</section>
+
+<!-- S3 -->
+<section id=&quot;s3&quot; class=&quot;wrap&quot;>
+  <div class=&quot;shead reveal&quot;><div class=&quot;snum&quot;>03</div><div>
+    <span class=&quot;en&quot;>Related Research / Lineage</span><h2>Samba の関連研究と系譜</h2>
+    <p>Samba は<b>選択的SSM（Mamba）</b>と<b>Sliding Window Attention</b>を、SwiGLU・RoPE で結ぶ。論文は多数の代替構成をアブレーションで比較し、「なぜ最もシンプルな逐次ハイブリッドが勝つか」を実証した。</p>
+  </div></div>
+
+  <div class=&quot;tracks reveal&quot;>
+    <div class=&quot;trackkey&quot;><span class=&quot;dotA&quot;></span>再帰系（無限記憶）</div>
+    <div class=&quot;trackkey&quot;><span class=&quot;dotB&quot;></span>注意系（精密想起）</div>
+  </div>
+
+  <div class=&quot;reveal&quot;>
+    <div class=&quot;tlrow&quot;>
+      <div class=&quot;yr&quot;>2020<br>–22</div>
+      <div class=&quot;tcell acol&quot;><div class=&quot;tnode a&quot;><div class=&quot;nm&quot;><span>S4 / S4D</span><span class=&quot;y&quot;>2111.00396</span></div><div class=&quot;ds&quot;>構造化SSM。長距離依存を線形時間で。Mambaの土台。</div></div></div>
+      <div class=&quot;tcell bcol&quot;><div class=&quot;tnode b&quot;><div class=&quot;nm&quot;><span>Sliding Window Attention</span><span class=&quot;y&quot;>Longformer / Mistral</span></div><div class=&quot;ds&quot;>局所窓に限定した注意で線形コスト化。SambaのSWA層の源流。</div></div></div>
+    </div>
+    <div class=&quot;tlrow&quot;>
+      <div class=&quot;yr&quot;>2023<br>12月</div>
+      <div class=&quot;tcell acol&quot;><div class=&quot;tnode a&quot;><div class=&quot;nm&quot;><span>Mamba</span><span class=&quot;y&quot;>2312.00752</span></div><div class=&quot;ds&quot;>選択的SSM。入力依存で内容を選別。Sambaの「無限記憶」担当。</div></div></div>
+      <div class=&quot;tcell bcol&quot;><div class=&quot;tnode b&quot;><div class=&quot;nm&quot;><span>RecurrentGemma / Griffin</span><span class=&quot;y&quot;>Google</span></div><div class=&quot;ds&quot;>ゲート付き線形再帰 + 局所注意。「再帰+局所注意」の最も近い従兄弟。</div></div></div>
+    </div>
+    <div class=&quot;tlrow&quot;>
+      <div class=&quot;yr&quot;>2024<br>3月</div>
+      <div class=&quot;tcell acol&quot;><div class=&quot;tnode a&quot;><div class=&quot;nm&quot;><span>Jamba</span><span class=&quot;y&quot;>2403.19887</span></div><div class=&quot;ds&quot;>Mamba+注意+MoE。Sambaの直前のハイブリッド。Sambaは「MoEなし・全注意でなくSWA」で差別化。</div></div></div>
+      <div class=&quot;tcell bcol&quot;></div>
+    </div>
+  </div>
+
+  <div class=&quot;arrowdown reveal&quot;>▼</div>
+  <div class=&quot;converge reveal&quot;>
+    <div class=&quot;big&quot;>🩵 SAMBA — 最小構成の勝利（2024年6月）</div>
+    <p><b style=&quot;color:var(--teal)&quot;>Mamba（無限記憶）</b> + <b style=&quot;color:var(--cyan)&quot;>SWA（精密想起）</b> + <b style=&quot;color:var(--purple)&quot;>SwiGLU（知識）</b> を層レベルで交互に積むだけ。MoEも並列ヘッドもなし。エントロピー分析が示すのは<b>層ごとの役割分化</b> ── 中間層は低エントロピーで精密検索、Mamba層は再帰構造のモデル化に専念する。</p>
+  </div>
+
+  <div class=&quot;card reveal&quot; style=&quot;margin-top:22px&quot;><h3>🔬 アブレーション：なぜこの構成か</h3>
+    <p>論文は同じ骨格で再帰ブロックだけ差し替えて比較した（1.7B, 15ベンチ平均）：</p>
+    <ul>
+      <li><b>Samba（Mamba+SWA）54.33</b> &amp;gt; Mamba-MLP 53.77 &amp;gt; Mamba 52.31 &amp;gt; Mamba-SWA-MLP 51.38 &amp;gt; Llama-3 51.17 &amp;gt; Mistral 51.12</li>
+      <li><b>Sliding RetNet</b>（入力非依存の減衰）→ 1.4Bで外挿が劣化</li>
+      <li><b>Sliding GLA</b>（入力依存ゲート）→ それでもSamba 421Bに及ばず → <b>Mambaの選択が効いている</b></li>
+      <li>注意は<b>1 KVヘッドが最適</b>。SWA単独の半分のクエリヘッドで足りる ── 注意容量はごく僅かで良い</li>
+    </ul>
+  </div>
+</section>
+
+<!-- S4 -->
+<section id=&quot;s4&quot; class=&quot;wrap&quot;>
+  <div class=&quot;shead reveal&quot;><div class=&quot;snum&quot;>04</div><div>
+    <span class=&quot;en&quot;>Architecture</span><h2>Samba のアーキテクチャ</h2>
+    <p>構造は驚くほど単純。<b>Mamba → MLP → SWA → MLP</b> という4サブ層のスーパーブロックをひたすら繰り返すだけ（偶数層=Mamba、奇数層=SWA、各々が専用のSwiGLU MLPを持つ）。</p>
+  </div></div>
+
+  <div class=&quot;step reveal&quot;>
+    <div class=&quot;sk&quot;>CORE — 繰り返し単位</div>
+    <h3>4サブ層の<span class=&quot;em&quot;>スーパーブロック</span></h3>
+    <p>各サブ層は <b>pre-norm（RMSNorm）→ 本体 → 残差</b> の構造。これを N/2 回繰り返す。</p>
+    <div class=&quot;sblock reveal&quot;>
+      <div class=&quot;superlabel&quot;>SUPER-BLOCK ── N/2 回繰り返す（3.8Bでは Mamba32 + SWA32 = 64サブ層）</div>
+      <div class=&quot;snode mamba&quot;><span class=&quot;lab&quot;>① Mamba 層 (S6)</span><span class=&quot;role&quot;>全履歴を固定状態に圧縮 / 無限記憶・位置情報は暗黙</span></div>
+      <div class=&quot;sarrow&quot;>↓</div>
+      <div class=&quot;snode mlp&quot;><span class=&quot;lab&quot;>② SwiGLU MLP</span><span class=&quot;role&quot;>事実知識・非線形変換</span></div>
+      <div class=&quot;sarrow&quot;>↓</div>
+      <div class=&quot;snode swa&quot;><span class=&quot;lab&quot;>③ Sliding Window Attention (w=2048)</span><span class=&quot;role&quot;>直近の窓を高精細に想起 / RoPE</span></div>
+      <div class=&quot;sarrow&quot;>↓</div>
+      <div class=&quot;snode mlp&quot;><span class=&quot;lab&quot;>④ SwiGLU MLP</span><span class=&quot;role&quot;>事実知識・非線形変換</span></div>
+      <div class=&quot;repeat&quot;>⟳ 繰り返し</div>
+    </div>
+    <div class=&quot;blocknote&quot;><b>役割分担:</b> Mamba は<b>位置エンコ不要</b>で全履歴を線形圧縮（推論の安価なバックボーン）、SWA は<b>2048トークンの窓</b>でRoPE付き精密検索。窓は「FlashAttention-2 と Mamba の選択スキャンが同速になる長さ」として2048を選択（学習長は窓×2 = 4096）。</div>
+  </div>
+
+  <div class=&quot;step reveal&quot;>
+    <div class=&quot;sk&quot;>INNER — Mamba 層の心臓</div>
+    <h3>選択的SSM（S6）の<span class=&quot;em&quot;>再帰式</span></h3>
+    <p>展開状態 <i>Z<sub>t</sub></i> を、入力依存のゲートで更新する。これが「何を長期に覚えるか」を内容で選ぶ。</p>
+    <div class=&quot;eq&quot;>
+      <i>Z</i><sub>t</sub> <span class=&quot;op&quot;>=</span> exp(<span class=&quot;op&quot;>−</span><i>Δ</i><sub>t</sub> ⊙ exp(<i>A</i>)) ⊙ <i>Z</i><sub>t−1</sub> <span class=&quot;op&quot;>+</span> <i>Δ</i><sub>t</sub> ⊙ (<i>B</i><sub>t</sub> ⊗ <i>U</i><sub>t</sub>)<br>
+      <i>Y</i><sub>t</sub> <span class=&quot;op&quot;>=</span> <i>Z</i><sub>t</sub> <i>C</i><sub>t</sub> <span class=&quot;op&quot;>+</span> <i>D</i> ⊙ <i>U</i><sub>t</sub>
+      <small>状態次元 d_s=16 / 拡大率2 / Short-Conv kernel=4 / Δ範囲[0.001, 0.1] / A初期化=S4D-Real</small>
+    </div>
+  </div>
+
+  <div class=&quot;step reveal&quot;>
+    <div class=&quot;sk&quot;>CONFIG — 3.8B の実体</div>
+    <h3>モデル構成と<span class=&quot;em&quot;>極端なGQA</span></h3>
+    <div class=&quot;grid3&quot; style=&quot;margin-top:8px&quot;>
+      <div class=&quot;card&quot; style=&quot;padding:18px&quot;><h3 style=&quot;font-size:1rem&quot;>📐 層構成</h3><p style=&quot;font-size:.86rem&quot;><b>64サブ層</b>（Mamba 32 + SWA 32 を交互）。モデル幅2816、MLP中間9984、語彙32064。</p></div>
+      <div class=&quot;card&quot; style=&quot;padding:18px&quot;><h3 style=&quot;font-size:1rem&quot;>🎯 11クエリ → 1 KVヘッド</h3><p style=&quot;font-size:.86rem&quot;>ほぼMQAの極端なGQA。「注意にはごく僅かな容量しか要らない」という発見の現れ。</p></div>
+      <div class=&quot;card&quot; style=&quot;padding:18px&quot;><h3 style=&quot;font-size:1rem&quot;>📚 学習</h3><p style=&quot;font-size:.86rem&quot;>3.2Tトークン（Phi-3データ）。学習系列長4096・SWA窓2048。pre-norm + RMSNorm + 残差。</p></div>
+    </div>
+    <div class=&quot;blocknote&quot;>なぜ無限外挿できるか ── <b>Mamba が履歴全体を線形コストで圧縮</b>し、<b>SWA が有界窓で正確に検索</b>する。両者とも系列長に対して線形なので、学習窓を超えても破綻せず、コストも線形のまま伸びる。</div>
+  </div>
+</section>
+
+<!-- S5 -->
+<section id=&quot;s5&quot; class=&quot;wrap&quot;>
+  <div class=&quot;shead reveal&quot;><div class=&quot;snum&quot;>05</div><div>
+    <span class=&quot;en&quot;>What to Study Next</span><h2>次に調べるべき技術要素・キーワード</h2>
+    <p>「長さ外挿」と「ハイブリッド設計」の2軸で深掘りが続く。Sambaの単純さが、逆に多くの問いを開いた。</p>
+  </div></div>
+
+  <div class=&quot;feature reveal&quot;>
+    <div class=&quot;ft&quot;><span class=&quot;star&quot;>★ 中心テーマ</span><h3>長さ外挿（Length Extrapolation）</h3><span class=&quot;tag tagk&quot;>unlimited context</span></div>
+    <p>「短く学習して長く使う」を実現する技術群。Sambaは構造で解いたが、位置エンコ側からのアプローチも併せて学ぶと理解が深まる。</p>
+    <div class=&quot;pts&quot;>
+      <div><b>Self-Extend</b>: 推論時のグループ化で窓を拡張（二次コストの課題）</div>
+      <div><b>Position Interpolation / NoPE</b>: 位置エンコの補間・除去</div>
+      <div><b>StreamingLLM</b>: attention sink を使った無限ストリーミング</div>
+      <div><b>Short Convolution</b>: 線形再帰/SWA層を底上げする謎の汎用enhancer</div>
+    </div>
+  </div>
+
+  <div class=&quot;kwgrid reveal&quot;>
+    <div class=&quot;kwcat&quot;><div class=&quot;ch&quot;>🔀 他のハイブリッド（比較対象）</div><div class=&quot;csub&quot;>Sambaは「最小・逐次」型。他と対比して学ぶ</div>
+      <div class=&quot;kwitem&quot;><span class=&quot;knm&quot;>Jamba</span><span class=&quot;kds&quot;>Mamba + 注意 + <b>MoE</b>。Sambaより複雑、全注意を使用<span class=&quot;kid&quot;>AI21 · 2403.19887</span></span></div>
+      <div class=&quot;kwitem&quot;><span class=&quot;knm&quot;>Hymba</span><span class=&quot;kds&quot;>注意とSSMを同一層で<b>並列</b>。Sambaの逐次型と対照<span class=&quot;kid&quot;>NVIDIA · 2411.13676</span></span></div>
+      <div class=&quot;kwitem&quot;><span class=&quot;knm&quot;>RecurrentGemma / Griffin</span><span class=&quot;kds&quot;>ゲート付き線形再帰 + 局所注意。最も近い従兄弟<span class=&quot;kid&quot;>Google</span></span></div>
+      <div class=&quot;kwitem&quot;><span class=&quot;knm&quot;>Zamba / Nemotron-H</span><span class=&quot;kds&quot;>共有注意 / 注意~8%のMamba-2ハイブリッド<span class=&quot;kid&quot;>2405.16712 / 2504.03624</span></span></div>
+    </div>
+    <div class=&quot;kwcat&quot;><div class=&quot;ch&quot;>🧱 基盤要素</div><div class=&quot;csub&quot;>Sambaを構成する技術</div>
+      <div class=&quot;kwitem&quot;><span class=&quot;knm&quot;>Mamba / 選択的SSM</span><span class=&quot;kds&quot;>入力依存パラメータによる内容選択<span class=&quot;kid&quot;>2312.00752</span></span></div>
+      <div class=&quot;kwitem&quot;><span class=&quot;knm&quot;>Sliding Window Attn</span><span class=&quot;kds&quot;>局所窓注意。窓サイズと系列長/窓比が論点<span class=&quot;kid&quot;>Longformer / Mistral</span></span></div>
+      <div class=&quot;kwitem&quot;><span class=&quot;knm&quot;>GQA / MQA</span><span class=&quot;kds&quot;>1 KVヘッドで足りる ── 注意容量の最小化</span></div>
+      <div class=&quot;kwitem&quot;><span class=&quot;knm&quot;>SwiGLU / RoPE / RMSNorm</span><span class=&quot;kds&quot;>標準的だが効くビルディングブロック</span></div>
+    </div>
+  </div>
+
+  <div class=&quot;openprob reveal&quot;>
+    <h3>🔬 Samba が開いた問い</h3>
+    <div class=&quot;pp&quot;><div class=&quot;q&quot;>① 最適な窓サイズ・Mamba:SWA比は？</div><div class=&quot;a&quot;>論文は系列長/窓比=2を発見。窓512/1024/2048のアブレーションあり。注意は<b>1 KVヘッドが最適</b>だった ── 「注意にどれだけパラメータを割くべきか」。</div></div>
+    <div class=&quot;pp&quot;><div class=&quot;q&quot;>② なぜ単純な逐次型が複雑な方式に勝つのか？</div><div class=&quot;a&quot;>全注意ハイブリッドは16Kでperplexity爆発。エントロピー分析は<b>層の役割分化</b>を示すが、理論的解明は途上。</div></div>
+    <div class=&quot;pp&quot;><div class=&quot;q&quot;>③ タスク適応型の動的アーキテクチャ</div><div class=&quot;a&quot;>Mamba-SWA-MLPはGSM8Kだけ Samba に勝った。タスクごとに構成を変える<b>動的アーキテクチャ</b>が将来課題。</div></div>
+  </div>
+</section>
+
+<footer>
+  <p>本インフォグラフィックは Samba 原論文（arXiv:2406.07522）および公式コード・config の調査に基づき作成。base版とinstruct版の数値は区別。数値は原典に準拠。</p>
+  <div class=&quot;refs&quot;>
+    <a href=&quot;https://arxiv.org/abs/2406.07522&quot;>Samba 2406.07522</a>
+    <a href=&quot;https://arxiv.org/abs/2312.00752&quot;>Mamba 2312.00752</a>
+    <a href=&quot;https://github.com/microsoft/Samba&quot;>github: microsoft/Samba</a>
+    <a href=&quot;https://arxiv.org/abs/2403.19887&quot;>Jamba 2403.19887</a>
+  </div>
+  <div class=&quot;crosslink&quot;>
+    <a href=&quot;./Jamba-インフォグラフィック.html&quot;>→ Jamba を見る</a>
+    <a href=&quot;./Hymba-インフォグラフィック.html&quot;>→ Hymba を見る</a>
+  </div>
+  <p style=&quot;margin-top:14px;color:var(--dim)&quot;>🩵 Simple Hybrid for Unlimited Context — generated for technical understanding</p>
+</footer>
+
+<script>
+  document.body.classList.add('js');
+  const prog=document.getElementById('progress');
+  const io=new IntersectionObserver((es)=>{es.forEach(e=>{if(e.isIntersecting){e.target.classList.add('in');io.unobserve(e.target);}})},{threshold:.12});
+  document.querySelectorAll('.reveal').forEach(el=>io.observe(el));
+  const secs=[...document.querySelectorAll('section[id]')],links=[...document.querySelectorAll('nav a')];
+  function onScroll(){const st=document.documentElement.scrollTop||document.body.scrollTop;const h=document.documentElement.scrollHeight-document.documentElement.clientHeight;prog.style.width=(st/h*100)+'%';let cur=secs[0]?secs[0].id:'';for(const s of secs){if(s.getBoundingClientRect().top<=120)cur=s.id;}links.forEach(l=>l.classList.toggle('active',l.getAttribute('href')==='#'+cur));}
+  document.addEventListener('scroll',onScroll,{passive:true});onScroll();
+</script>
+</body>
+</html>
+"></iframe>
+    <iframe class="frame" id="f-hymba" title="Hymba インフォグラフィック" loading="lazy" srcdoc="<!DOCTYPE html>
+<html lang=&quot;ja&quot;>
+<head>
+<meta charset=&quot;UTF-8&quot;>
+<meta name=&quot;viewport&quot; content=&quot;width=device-width, initial-scale=1.0&quot;>
+<title>Hymba 技術解説インフォグラフィック — Hybrid-head Architecture</title>
+<style>
+  :root{
+    --bg:#070d09;--bg2:#0c1410;--card:#101c14;--card2:#16271b;--elev:#1d3525;
+    --border:#264a31;--border2:#356b45;--text:#e9f5ec;--muted:#a6c8b2;--dim:#6f9580;
+    --green:#76d957;--lime:#a3e635;--teal:#5eead4;--cyan:#67e8f9;--amber:#fcd34d;--purple:#c4b5fd;--red:#fb7185;--blue:#7dd3fc;
+    --grad:linear-gradient(120deg,#a3e635 0%,#76d957 35%,#5eead4 70%,#67e8f9 100%);
+    --grad2:linear-gradient(120deg,#76d957,#5eead4);
+    --mono:'SFMono-Regular',Consolas,'Liberation Mono',Menlo,monospace;
+    --math:'Cambria Math','Latin Modern Math',Cambria,Georgia,serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{scroll-behavior:smooth;scroll-padding-top:70px}
+  body{background:var(--bg);color:var(--text);font-family:'Segoe UI','Hiragino Kaku Gothic ProN','Yu Gothic UI',Meiryo,system-ui,sans-serif;line-height:1.75;font-size:16px;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+  body::before{content:&quot;&quot;;position:fixed;inset:0;z-index:-2;background:radial-gradient(ellipse 80% 50% at 13% -5%,rgba(118,217,87,.10),transparent 60%),radial-gradient(ellipse 70% 50% at 91% 5%,rgba(94,234,212,.11),transparent 60%),radial-gradient(ellipse 90% 60% at 50% 110%,rgba(103,232,249,.06),transparent 60%)}
+  body::after{content:&quot;&quot;;position:fixed;inset:0;z-index:-1;opacity:.5;background-image:radial-gradient(rgba(130,180,150,.06) 1px,transparent 1px);background-size:38px 38px}
+  a{color:var(--cyan);text-decoration:none}a:hover{text-decoration:underline}
+  #progress{position:fixed;top:0;left:0;height:3px;width:0;z-index:100;background:var(--grad);box-shadow:0 0 12px rgba(118,217,87,.6)}
+  nav{position:sticky;top:0;z-index:90;backdrop-filter:blur(12px);background:rgba(7,13,9,.82);border-bottom:1px solid var(--border)}
+  nav .navin{max-width:1180px;margin:0 auto;display:flex;align-items:center;gap:6px;padding:10px 22px;flex-wrap:wrap}
+  nav .brand{font-weight:800;letter-spacing:.5px;margin-right:auto;font-size:1.05rem;display:flex;align-items:center;gap:8px}
+  nav .brand b{background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
+  nav a{color:var(--muted);font-size:.82rem;padding:6px 11px;border-radius:8px;font-weight:600;transition:.18s;white-space:nowrap}
+  nav a:hover{color:var(--text);background:var(--card2);text-decoration:none}
+  nav a.active{color:#06140a;background:var(--grad2)}
+  .wrap{max-width:1180px;margin:0 auto;padding:0 22px}
+  section{padding:64px 0;border-bottom:1px solid rgba(38,74,49,.5)}
+  .hero{padding:84px 0 64px;text-align:center;position:relative}
+  .logo{font-size:3rem;filter:drop-shadow(0 0 22px rgba(118,217,87,.45));animation:float 5s ease-in-out infinite}
+  @keyframes float{50%{transform:translateY(-10px)}}
+  .hero h1{font-size:clamp(2.6rem,7vw,5rem);font-weight:900;letter-spacing:-1px;line-height:1.02;margin:14px 0 6px}
+  .hero h1 span{background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
+  .hero .sub{font-size:clamp(1rem,2.4vw,1.35rem);color:var(--muted);font-weight:500;margin-bottom:8px}
+  .hero .paper{display:inline-flex;gap:10px;align-items:center;flex-wrap:wrap;justify-content:center;margin-top:18px;font-size:.9rem}
+  .hero .paper .pill{background:var(--card);border:1px solid var(--border);border-radius:999px;padding:5px 14px;color:var(--muted)}
+  .thesis{max-width:850px;margin:30px auto 0;font-size:1.16rem;line-height:1.85;color:var(--text);background:linear-gradient(135deg,rgba(118,217,87,.07),rgba(94,234,212,.07));border:1px solid var(--border);border-left:4px solid var(--green);border-radius:14px;padding:22px 26px}
+  .thesis b{background:var(--grad2);-webkit-background-clip:text;background-clip:text;color:transparent;font-weight:800}
+  .heroStats{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;max-width:900px;margin:34px auto 0}
+  .heroStats .s{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:18px 10px}
+  .heroStats .n{font-size:1.8rem;font-weight:900;background:var(--grad2);-webkit-background-clip:text;background-clip:text;color:transparent;line-height:1}
+  .heroStats .l{font-size:.74rem;color:var(--muted);margin-top:7px;letter-spacing:.3px}
+  .shead{display:flex;align-items:flex-start;gap:18px;margin-bottom:34px}
+  .snum{flex:none;width:60px;height:60px;border-radius:16px;display:grid;place-items:center;font-size:1.5rem;font-weight:900;background:linear-gradient(135deg,rgba(118,217,87,.16),rgba(94,234,212,.16));border:1px solid var(--border2);color:var(--green);font-family:var(--mono)}
+  .shead h2{font-size:clamp(1.6rem,3.6vw,2.4rem);font-weight:850;letter-spacing:-.5px;line-height:1.12}
+  .shead .en{color:var(--dim);font-size:.85rem;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;display:block;margin-bottom:3px}
+  .shead p{color:var(--muted);margin-top:8px;max-width:790px}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+  .grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}
+  .card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:24px;transition:transform .2s,border-color .2s,box-shadow .2s}
+  .card:hover{transform:translateY(-4px);border-color:var(--border2);box-shadow:0 14px 40px rgba(0,0,0,.4)}
+  .card h3{font-size:1.16rem;font-weight:750;margin-bottom:10px;display:flex;align-items:center;gap:10px}
+  .card p{color:var(--muted);font-size:.94rem}
+  .card ul{list-style:none;margin-top:10px}
+  .card ul li{color:var(--muted);font-size:.92rem;padding:5px 0 5px 22px;position:relative}
+  .card ul li::before{content:&quot;▹&quot;;position:absolute;left:0;color:var(--green)}
+  .tag{display:inline-block;font-family:var(--mono);font-size:.72rem;padding:2px 9px;border-radius:6px;background:var(--elev);border:1px solid var(--border2);color:var(--cyan);font-weight:600}
+  .tagp{color:var(--purple)}.tagk{color:var(--blue)}.taga{color:var(--amber)}.tagg{color:var(--lime)}
+  .tension{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:8px}
+  .tcol{padding:24px;border-radius:16px;border:1px solid var(--border)}
+  .tcol .ttl{font-weight:800;font-size:1.04rem;margin-bottom:3px}
+  .tcol .vs{font-size:.72rem;letter-spacing:1px;text-transform:uppercase;font-weight:700;margin-bottom:13px}
+  .t-a{background:linear-gradient(160deg,rgba(252,211,77,.09),transparent);border-color:rgba(252,211,77,.3)}.t-a .vs{color:var(--amber)}
+  .t-s{background:linear-gradient(160deg,rgba(94,234,212,.09),transparent);border-color:rgba(94,234,212,.3)}.t-s .vs{color:var(--teal)}
+  .t-h{background:linear-gradient(160deg,rgba(196,181,253,.09),transparent);border-color:rgba(196,181,253,.3)}.t-h .vs{color:var(--purple)}
+  .tcol .row{display:flex;gap:9px;padding:6px 0;font-size:.87rem;color:var(--muted);align-items:flex-start}
+  .tcol .row b{color:var(--text);font-weight:700}.tcol .ico{flex:none;width:18px;text-align:center}
+  .good{color:var(--lime)}.bad{color:var(--red)}
+  .axisnote{margin-top:18px;padding:18px 22px;border-radius:14px;background:var(--card2);border:1px dashed var(--border2);font-size:.96rem;color:var(--muted)}
+  .axisnote b{color:var(--green)}
+  .bigstats{display:grid;grid-template-columns:repeat(4,1fr);gap:18px;margin-bottom:24px}
+  .bs{background:linear-gradient(160deg,var(--card2),var(--card));border:1px solid var(--border);border-radius:16px;padding:24px 20px;position:relative;overflow:hidden}
+  .bs::before{content:&quot;&quot;;position:absolute;top:-30px;right:-30px;width:90px;height:90px;border-radius:50%;background:var(--grad2);opacity:.1;filter:blur(6px)}
+  .bs .n{font-size:2.3rem;font-weight:900;line-height:1;background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
+  .bs .u{font-size:1rem;font-weight:700;color:var(--muted)}
+  .bs .l{margin-top:9px;font-size:.85rem;color:var(--muted)}.bs .l b{color:var(--text)}
+  table{width:100%;border-collapse:collapse;margin:14px 0;font-size:.9rem;border-radius:12px;overflow:hidden}
+  table th,table td{padding:11px 14px;text-align:left;border-bottom:1px solid var(--border)}
+  table thead th{background:var(--card2);font-size:.78rem;letter-spacing:.4px;color:var(--muted);text-transform:uppercase}
+  table tbody tr{background:var(--bg2)}table tbody tr:hover{background:var(--card2)}
+  table td .mono{font-family:var(--mono);font-size:.85rem}.hl{color:var(--green);font-weight:700}
+  .winner{background:rgba(118,217,87,.08)!important}
+  .tracks{display:flex;justify-content:center;gap:14px;margin-bottom:22px;flex-wrap:wrap}
+  .trackkey{display:flex;align-items:center;gap:8px;font-size:.84rem;color:var(--muted);background:var(--card);border:1px solid var(--border);padding:6px 13px;border-radius:999px}
+  .dotA{width:11px;height:11px;border-radius:50%;background:var(--teal)}.dotB{width:11px;height:11px;border-radius:50%;background:var(--amber)}
+  .tlrow{display:grid;grid-template-columns:64px 1fr 1fr;gap:14px;align-items:stretch;padding:7px 0}
+  .yr{display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-weight:800;font-size:.92rem;color:var(--green);background:var(--card2);border:1px solid var(--border2);border-radius:10px}
+  .tcell{display:flex;flex-direction:column;gap:10px}
+  .tnode{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:13px 15px;transition:.18s}
+  .tnode:hover{transform:translateX(4px);border-color:var(--border2)}
+  .tnode.a{border-left:3px solid var(--teal)}.tnode.b{border-left:3px solid var(--amber)}
+  .tnode .nm{font-weight:750;font-size:.95rem;display:flex;justify-content:space-between;gap:8px;align-items:baseline;flex-wrap:wrap}
+  .tnode .nm .y{font-family:var(--mono);font-size:.68rem;color:var(--dim)}
+  .tnode .ds{color:var(--muted);font-size:.84rem;margin-top:3px}
+  .converge{margin-top:14px;background:linear-gradient(120deg,rgba(118,217,87,.13),rgba(94,234,212,.13),rgba(103,232,249,.13));border:1px solid var(--border2);border-radius:16px;padding:22px 26px;text-align:center}
+  .converge .big{font-size:1.5rem;font-weight:900;background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
+  .converge p{color:var(--muted);margin-top:6px;max-width:790px;margin-inline:auto;font-size:.94rem}
+  .arrowdown{text-align:center;font-size:1.6rem;color:var(--border2);margin:2px 0}
+  .step{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:26px;margin-bottom:20px;position:relative}
+  .step .sk{position:absolute;top:-12px;left:22px;font-family:var(--mono);font-size:.74rem;font-weight:700;color:#06140a;background:var(--grad2);padding:4px 12px;border-radius:7px}
+  .step h3{font-size:1.3rem;font-weight:800;margin:6px 0 12px}
+  .step h3 .em{background:var(--grad2);-webkit-background-clip:text;background-clip:text;color:transparent}
+  .step p{color:var(--muted)}.step p b{color:var(--text)}
+  /* parallel head diagram */
+  .phead{max-width:660px;margin:12px auto;display:flex;flex-direction:column;align-items:center;gap:0}
+  .pnode{border-radius:11px;padding:11px 16px;border:1px solid var(--border);text-align:center;font-weight:650;font-size:.9rem}
+  .pin{background:var(--card2);color:var(--muted);font-family:var(--mono);font-size:.82rem;width:80%}
+  .pproj{background:linear-gradient(90deg,rgba(103,232,249,.12),rgba(103,232,249,.04));border-color:rgba(103,232,249,.3);width:80%}
+  .parrow{color:var(--border2);font-size:1.2rem;line-height:1.3}
+  .splitlabel{font-size:.74rem;color:var(--dim);font-family:var(--mono);margin:2px 0}
+  .pbranches{display:flex;gap:18px;width:100%;align-items:stretch}
+  .pbranch{flex:1;display:flex;flex-direction:column;align-items:center;gap:7px;border-radius:14px;padding:16px 12px}
+  .pbranch.attn{background:linear-gradient(160deg,rgba(252,211,77,.12),transparent);border:1px solid rgba(252,211,77,.35)}
+  .pbranch.ssm{background:linear-gradient(160deg,rgba(94,234,212,.12),transparent);border:1px solid rgba(94,234,212,.35)}
+  .pbranch .bh{font-weight:800;font-size:.98rem}
+  .pbranch.attn .bh{color:var(--amber)}.pbranch.ssm .bh{color:var(--teal)}
+  .pbranch .bm{font-size:.74rem;color:var(--muted);min-height:32px}
+  .pcell{width:100%;background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:7px 9px;font-size:.78rem;color:var(--muted);font-family:var(--mono)}
+  .pmem{font-size:.72rem;padding:3px 8px;border-radius:999px;font-weight:700}
+  .pmem.snap{background:rgba(252,211,77,.18);color:var(--amber)}.pmem.fade{background:rgba(94,234,212,.18);color:var(--teal)}
+  .fuse{width:80%;background:linear-gradient(90deg,rgba(118,217,87,.18),rgba(94,234,212,.1));border:1px solid rgba(118,217,87,.45);color:var(--green);font-weight:800;border-radius:11px;padding:12px;text-align:center;margin-top:2px}
+  .parallel-tag{position:absolute;right:22px;top:24px;font-size:.7rem;font-weight:800;letter-spacing:1px;color:var(--green);border:1px solid var(--border2);border-radius:999px;padding:4px 12px;background:var(--card2)}
+  /* memory triad */
+  .triad{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin:8px 0}
+  .mem3{border-radius:14px;padding:18px;border:1px solid var(--border)}
+  .mem3.snap{background:linear-gradient(160deg,rgba(252,211,77,.1),transparent);border-color:rgba(252,211,77,.3)}
+  .mem3.fade{background:linear-gradient(160deg,rgba(94,234,212,.1),transparent);border-color:rgba(94,234,212,.3)}
+  .mem3.meta{background:linear-gradient(160deg,rgba(196,181,253,.1),transparent);border-color:rgba(196,181,253,.3)}
+  .mem3 .mi{font-size:1.6rem}.mem3 h4{margin:6px 0 4px;font-size:1rem}
+  .mem3.snap h4{color:var(--amber)}.mem3.fade h4{color:var(--teal)}.mem3.meta h4{color:var(--purple)}
+  .mem3 p{font-size:.84rem;color:var(--muted)}
+  /* layer layout strip */
+  .laystrip{margin:14px 0;background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:18px}
+  .laystrip .lt{font-size:.82rem;color:var(--dim);font-family:var(--mono);margin-bottom:12px;letter-spacing:.5px}
+  .layrow{display:flex;gap:3px;flex-wrap:wrap}
+  .lcell{flex:1;min-width:18px;height:34px;border-radius:5px;display:grid;place-items:center;font-size:.62rem;font-family:var(--mono);color:var(--dim)}
+  .lcell.swa{background:rgba(94,234,212,.13);border:1px solid rgba(94,234,212,.25)}
+  .lcell.glob{background:linear-gradient(160deg,rgba(252,211,77,.3),rgba(252,211,77,.12));border:1px solid rgba(252,211,77,.6);color:var(--amber);font-weight:800}
+  .laylegend{display:flex;gap:16px;margin-top:12px;font-size:.78rem;color:var(--muted);flex-wrap:wrap}
+  .laylegend span{display:flex;align-items:center;gap:6px}
+  .sw{width:13px;height:13px;border-radius:4px}
+  .blocknote{font-size:.85rem;color:var(--muted);margin-top:14px;background:var(--card2);border:1px solid var(--border);border-radius:11px;padding:14px 16px}
+  .blocknote b{color:var(--text)}
+  .eq{font-family:var(--math);background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:16px 20px;margin:12px 0;font-size:1.08rem;text-align:center;overflow-x:auto;line-height:2}
+  .eq i{font-style:italic;color:var(--teal)}.eq .op{color:var(--muted)}.eq small{font-size:.7em;color:var(--muted);display:block;font-family:var(--mono);margin-top:6px}
+  .feature{background:linear-gradient(120deg,rgba(118,217,87,.12),rgba(94,234,212,.1));border:1px solid var(--border2);border-radius:18px;padding:28px;margin-bottom:22px}
+  .feature .ft{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:8px}
+  .feature h3{font-size:1.35rem;font-weight:850}
+  .feature .star{background:var(--green);color:#06140a;font-size:.7rem;font-weight:800;padding:3px 10px;border-radius:999px;letter-spacing:.5px}
+  .feature p{color:var(--muted);font-size:.95rem}
+  .feature .pts{display:grid;grid-template-columns:1fr 1fr;gap:10px 22px;margin-top:14px}
+  .feature .pts div{font-size:.9rem;color:var(--muted);padding-left:20px;position:relative}
+  .feature .pts div::before{content:&quot;◆&quot;;position:absolute;left:0;color:var(--green);font-size:.7rem;top:5px}
+  .feature .pts b{color:var(--text)}
+  .kwgrid{display:grid;grid-template-columns:repeat(2,1fr);gap:18px}
+  .kwcat{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:22px}
+  .kwcat .ch{font-weight:800;font-size:1.1rem;margin-bottom:4px;display:flex;align-items:center;gap:9px}
+  .kwcat .csub{color:var(--dim);font-size:.82rem;margin-bottom:14px}
+  .kwitem{display:flex;gap:11px;padding:9px 0;border-top:1px solid var(--border);align-items:baseline}
+  .kwitem:first-of-type{border-top:none}
+  .kwitem .knm{font-weight:700;font-size:.92rem;min-width:124px;flex:none}
+  .kwitem .kds{color:var(--muted);font-size:.84rem}
+  .kwitem .kid{font-family:var(--mono);font-size:.7rem;color:var(--dim);display:block;margin-top:2px}
+  .openprob{background:linear-gradient(160deg,rgba(196,181,253,.08),transparent);border:1px solid rgba(196,181,253,.3);border-radius:16px;padding:24px;margin-top:22px}
+  .openprob h3{color:var(--purple);font-size:1.22rem;margin-bottom:6px;display:flex;align-items:center;gap:9px}
+  .openprob .pp{margin-top:13px}
+  .openprob .pp .q{font-weight:750;color:var(--text);font-size:.94rem}
+  .openprob .pp .a{color:var(--muted);font-size:.87rem;margin-top:3px}
+  footer{padding:50px 22px 70px;text-align:center;color:var(--dim);font-size:.85rem;max-width:980px;margin:0 auto}
+  footer .refs{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin:16px 0}
+  footer .refs a{font-family:var(--mono);font-size:.74rem;background:var(--card);border:1px solid var(--border);padding:4px 10px;border-radius:7px;color:var(--muted)}
+  footer .refs a:hover{border-color:var(--border2);color:var(--cyan);text-decoration:none}
+  .crosslink{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-top:18px}
+  .crosslink a{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:8px 16px;color:var(--muted);font-size:.85rem;font-weight:600}
+  .crosslink a:hover{border-color:var(--green);color:var(--text);text-decoration:none}
+  body.js .reveal{opacity:0;transform:translateY(26px);transition:opacity .6s ease,transform .6s ease}
+  body.js .reveal.in{opacity:1;transform:none}
+  @media(max-width:860px){
+    .grid2,.grid3,.heroStats,.bigstats,.tension,.triad,.feature .pts,.kwgrid{grid-template-columns:1fr}
+    .heroStats,.bigstats{grid-template-columns:1fr 1fr}
+    .tlrow{grid-template-columns:48px 1fr}.tlrow .tcell.bcol{grid-column:2}
+    .pbranches{flex-direction:column}.parallel-tag{display:none}
+    nav .navin{padding:8px 14px}.wrap{padding:0 15px}
+  }
+</style>
+</head>
+<body>
+<div id=&quot;progress&quot;></div>
+<nav><div class=&quot;navin&quot;>
+  <div class=&quot;brand&quot;>💚 <b>Hymba</b></div>
+  <a href=&quot;#s1&quot;>課題</a><a href=&quot;#s2&quot;>実現できること</a><a href=&quot;#s3&quot;>関連研究</a><a href=&quot;#s4&quot;>アーキテクチャ</a><a href=&quot;#s5&quot;>次のキーワード</a>
+</div></nav>
+
+<header class=&quot;hero wrap&quot;>
+  <div class=&quot;logo&quot;>💚🧩</div>
+  <h1>Hymba <span>:</span><br><span>Hybrid-head Architecture</span></h1>
+  <div class=&quot;sub&quot;>注意とSSMを「同一層・並列」で走らせる小型言語モデル</div>
+  <div class=&quot;paper&quot;>
+    <span class=&quot;pill&quot;>NVIDIA</span><span class=&quot;pill&quot;>arXiv:2411.13676</span><span class=&quot;pill&quot;>2024年11月</span><span class=&quot;pill&quot;>ICLR 2025</span>
+  </div>
+  <div class=&quot;thesis&quot;>
+    Jamba や Samba は注意層とSSM層を<b>別々の深さに積む（逐次型）</b>── どの層もその1機構にボトルネックされる。
+    Hymba の発想は逆だ ── <b>同一層・同一トークンに、注意ヘッドとSSMヘッドを「並列」に走らせる</b>。
+    注意が<b>高精細な想起</b>を、SSMが<b>効率的な要約</b>を同時に担い、両者を融合する。小型・オンデバイスでも想起を犠牲にしない。
+  </div>
+  <div class=&quot;heroStats reveal&quot;>
+    <div class=&quot;s&quot;><div class=&quot;n&quot;>1.5B</div><div class=&quot;l&quot;>パラメータ / 1.5Tトークン学習</div></div>
+    <div class=&quot;s&quot;><div class=&quot;n&quot;>+1.32%</div><div class=&quot;l&quot;>平均精度（vs Llama-3.2-3B）</div></div>
+    <div class=&quot;s&quot;><div class=&quot;n&quot;>11.67×</div><div class=&quot;l&quot;>KVキャッシュ削減</div></div>
+    <div class=&quot;s&quot;><div class=&quot;n&quot;>3.49×</div><div class=&quot;l&quot;>スループット（664 tok/s）</div></div>
+  </div>
+</header>
+
+<!-- S1 -->
+<section id=&quot;s1&quot; class=&quot;wrap&quot;>
+  <div class=&quot;shead reveal&quot;><div class=&quot;snum&quot;>01</div><div>
+    <span class=&quot;en&quot;>Before Hymba</span><h2>Hymba 登場前の課題</h2>
+    <p>注意とSSMは得意が真逆。そして<b>「層を分けて積む」逐次ハイブリッド</b>には、構造的な限界があった ── 各トークンはその層の単一機構しか通れない。</p>
+  </div></div>
+
+  <div class=&quot;tension reveal&quot;>
+    <div class=&quot;tcol t-a&quot;>
+      <div class=&quot;vs&quot;>高精細 / 高コスト</div><div class=&quot;ttl&quot;>⚡ 注意（Attention）</div>
+      <div class=&quot;row&quot;><span class=&quot;ico good&quot;>✓</span><span><b>高解像度の想起</b>（トークン単位の正確な検索）</span></div>
+      <div class=&quot;row&quot;><span class=&quot;ico bad&quot;>✕</span><span><b>O(N²)</b> 計算</span></div>
+      <div class=&quot;row&quot;><span class=&quot;ico bad&quot;>✕</span><span>KVキャッシュが線形に肥大 ── 小型/オンデバイスでは致命的</span></div>
+    </div>
+    <div class=&quot;tcol t-s&quot;>
+      <div class=&quot;vs&quot;>効率的 / 低精細</div><div class=&quot;ttl&quot;>🧠 SSM（Mamba）</div>
+      <div class=&quot;row&quot;><span class=&quot;ico good&quot;>✓</span><span><b>効率的な文脈要約</b>・定数キャッシュ・O(N)</span></div>
+      <div class=&quot;row&quot;><span class=&quot;ico bad&quot;>✕</span><span><b>低解像度の想起</b> ── 固定状態に押し込むため正確な検索が苦手</span></div>
+    </div>
+    <div class=&quot;tcol t-h&quot;>
+      <div class=&quot;vs&quot;>逐次型の限界</div><div class=&quot;ttl&quot;>🧱 Jamba / Samba（逐次）</div>
+      <div class=&quot;row&quot;><span class=&quot;ico bad&quot;>✕</span><span>注意層とSSM層を<b>別々の深さ</b>に配置</span></div>
+      <div class=&quot;row&quot;><span class=&quot;ico bad&quot;>✕</span><span>トークンはその層の<b>単一機構にボトルネック</b></span></div>
+      <div class=&quot;row&quot;><span class=&quot;ico bad&quot;>✕</span><span><b>同一トークン・同一層</b>で「高精細想起」と「効率的要約」を同時に得られない</span></div>
+    </div>
+  </div>
+
+  <div class=&quot;axisnote reveal&quot;>
+    💡 Hymba の着想 ── 想起と要約は<b>すべてのトークン・すべての層で同時に利用可能であるべき</b>。
+    逐次スタックでは不可能なこれを、<b>並列ハイブリッドヘッド</b>で実現する。さらに、注意が無意味なBOSトークンに<b>「無理やり注意を向けてしまう」（attention sink）</b>問題も、学習可能なメタトークンで解消する。
+  </div>
+</section>
+
+<!-- S2 -->
+<section id=&quot;s2&quot; class=&quot;wrap&quot;>
+  <div class=&quot;shead reveal&quot;><div class=&quot;snum&quot;>02</div><div>
+    <span class=&quot;en&quot;>What Hymba Enables</span><h2>Hymba が実現できること</h2>
+    <p>並列ヘッド＋キャッシュ最適化で、<b>2B未満のサイズで最高精度</b>。しかもキャッシュは桁違いに小さく、スループットは数倍 ── オンデバイスの理想形。</p>
+  </div></div>
+
+  <div class=&quot;bigstats reveal&quot;>
+    <div class=&quot;bs&quot;><div class=&quot;n&quot;>61.06<span class=&quot;u&quot;>%</span></div><div class=&quot;l&quot;><b>平均精度</b><br>Llama-3.2-3B(59.74%)を +1.32pt 上回る（半分のサイズで）</div></div>
+    <div class=&quot;bs&quot;><div class=&quot;n&quot;>79<span class=&quot;u&quot;>MB</span></div><div class=&quot;l&quot;><b>KVキャッシュ</b><br>Llama-3.2-3B 918MB → 11.67分の1</div></div>
+    <div class=&quot;bs&quot;><div class=&quot;n&quot;>664</div><div class=&quot;l&quot;><b>スループット (tok/s)</b><br>Llama-3.2-3B 191 → 3.49倍</div></div>
+    <div class=&quot;bs&quot;><div class=&quot;n&quot;>&amp;gt;50<span class=&quot;u&quot;>%</span></div><div class=&quot;l&quot;><b>注意計算をSSMで置換</b><br>安価なSSM計算が支配的</div></div>
+  </div>
+
+  <h3 style=&quot;margin:18px 0 10px;font-size:1.1rem&quot;>📊 sub-2B モデルでSOTA</h3>
+  <table class=&quot;reveal&quot;>
+    <thead><tr><th>モデル</th><th>学習トークン</th><th>平均精度</th><th>キャッシュ</th><th>tok/s</th></tr></thead>
+    <tbody>
+      <tr class=&quot;winner&quot;><td><b>Hymba-1.5B</b></td><td>1.5T</td><td class=&quot;hl&quot;>61.06%</td><td class=&quot;hl&quot;>79 MB</td><td class=&quot;hl&quot;>664</td></tr>
+      <tr><td>Qwen2.5-1.5B</td><td>18T</td><td>59.51%</td><td>229 MB</td><td>469</td></tr>
+      <tr><td>SmolLM2-1.7B</td><td>11T</td><td>60.04%</td><td>1573 MB</td><td>238</td></tr>
+      <tr><td>Llama-3.2-1B</td><td>9T</td><td>50.29%</td><td>262 MB</td><td>535</td></tr>
+    </tbody>
+  </table>
+  <p style=&quot;color:var(--muted);font-size:.88rem;margin-top:6px&quot;>12倍多いトークンで学習した Qwen2.5 すら上回り、SmolLM2比でキャッシュは約20分の1。長い系列ではキャッシュ削減はさらに拡大し、NVIDIAは<span class=&quot;tag taga&quot;>14.72×</span>とも報告（精度+1.32%・スループット3.49×は共通）。</p>
+</section>
+
+<!-- S3 -->
+<section id=&quot;s3&quot; class=&quot;wrap&quot;>
+  <div class=&quot;shead reveal&quot;><div class=&quot;snum&quot;>03</div><div>
+    <span class=&quot;en&quot;>Related Research / Lineage</span><h2>Hymba の関連研究と系譜</h2>
+    <p>Hymba は3つの系譜を1層に束ねる ── <b>SSM（Mamba）</b>と<b>注意</b>を並列融合し、<b>メタトークン/attention sink</b>と<b>KVキャッシュ共有</b>の知見を統合した。</p>
+  </div></div>
+
+  <div class=&quot;tracks reveal&quot;>
+    <div class=&quot;trackkey&quot;><span class=&quot;dotA&quot;></span>系列モデル（SSM / 注意）</div>
+    <div class=&quot;trackkey&quot;><span class=&quot;dotB&quot;></span>トークン/キャッシュの工夫</div>
+  </div>
+
+  <div class=&quot;reveal&quot;>
+    <div class=&quot;tlrow&quot;>
+      <div class=&quot;yr&quot;>2023<br>–24</div>
+      <div class=&quot;tcell acol&quot;><div class=&quot;tnode a&quot;><div class=&quot;nm&quot;><span>Mamba / Mamba-2</span><span class=&quot;y&quot;>2312.00752 / 2405.21060</span></div><div class=&quot;ds&quot;>選択的SSM。HymbaのSSMヘッドは Mamba-1 スタイル（状態次元16）。</div></div></div>
+      <div class=&quot;tcell bcol&quot;>
+        <div class=&quot;tnode b&quot;><div class=&quot;nm&quot;><span>StreamingLLM（attention sink）</span><span class=&quot;y&quot;>Xiao+ 2023</span></div><div class=&quot;ds&quot;>モデルが先頭トークンに注意を捨てる現象。メタトークンの着想源。</div></div>
+        <div class=&quot;tnode b&quot;><div class=&quot;nm&quot;><span>ViT registers</span><span class=&quot;y&quot;>Darcet+ 2023</span></div><div class=&quot;ds&quot;>画像Transformerに学習可能な「レジスタ」を追加。メタトークンの言語版。</div></div>
+      </div>
+    </div>
+    <div class=&quot;tlrow&quot;>
+      <div class=&quot;yr&quot;>2024<br>春〜夏</div>
+      <div class=&quot;tcell acol&quot;><div class=&quot;tnode a&quot;><div class=&quot;nm&quot;><span>Jamba / Samba（逐次ハイブリッド）</span><span class=&quot;y&quot;>2403.19887 / 2406.07522</span></div><div class=&quot;ds&quot;>注意とSSMを別層に積む。Hymbaが「並列 vs 逐次」として明示的に対比する相手。</div></div></div>
+      <div class=&quot;tcell bcol&quot;><div class=&quot;tnode b&quot;><div class=&quot;nm&quot;><span>GQA / cross-layer KV sharing</span><span class=&quot;y&quot;>CLA / YOCO</span></div><div class=&quot;ds&quot;>ヘッド間・層間でKVを共有しキャッシュを削減。Hymbaが両方採用。</div></div></div>
+    </div>
+    <div class=&quot;tlrow&quot;>
+      <div class=&quot;yr&quot;>2024<br>11月</div>
+      <div class=&quot;tcell acol&quot;><div class=&quot;tnode a&quot;><div class=&quot;nm&quot;><span>Hymba-1.5B</span><span class=&quot;y&quot;>2411.13676</span></div><div class=&quot;ds&quot;>並列ハイブリッドヘッド + メタトークン + 局所/大域注意 + 層間KV共有。</div></div></div>
+      <div class=&quot;tcell bcol&quot;></div>
+    </div>
+  </div>
+
+  <div class=&quot;arrowdown reveal&quot;>▼</div>
+  <div class=&quot;converge reveal&quot;>
+    <div class=&quot;big&quot;>💚 HYMBA — 並列融合という別解（2024年11月）</div>
+    <p>Jamba・Samba が「層を分ける逐次型」なら、Hymba は<b>「同一層で並列に融合する」型</b>。注意ヘッド（スナップショット記憶）とSSMヘッド（フェード記憶）を全トークン・全層で同時に動かし、さらに<b>メタ記憶</b>（メタトークン）を加える ── 3種の記憶の協調。</p>
+  </div>
+</section>
+
+<!-- S4 -->
+<section id=&quot;s4&quot; class=&quot;wrap&quot;>
+  <div class=&quot;shead reveal&quot;><div class=&quot;snum&quot;>04</div><div>
+    <span class=&quot;en&quot;>Architecture</span><h2>Hymba のアーキテクチャ</h2>
+    <p>核心は<b>並列ハイブリッドヘッド</b>。1つの層の中で、同じ入力を注意ヘッドとSSMヘッドが同時に処理し、正規化して融合する。これが逐次型との決定的な違い。</p>
+  </div></div>
+
+  <div class=&quot;step reveal&quot; style=&quot;position:relative&quot;>
+    <div class=&quot;sk&quot;>CORE — 並列ハイブリッドヘッド</div>
+    <span class=&quot;parallel-tag&quot;>PARALLEL ⇄ 逐次型と対照的</span>
+    <h3>同一層で<span class=&quot;em&quot;>注意 ∥ SSM</span> を並列実行</h3>
+    <p>入力を共有の潜在特徴 <i>X̃</i> に射影し、<b>2つの経路に同時に</b>流す。各出力を正規化し、学習可能なスケールで再調整して平均融合する。</p>
+    <div class=&quot;phead reveal&quot;>
+      <div class=&quot;pnode pin&quot;>入力トークン X（+ メタトークン128個）</div>
+      <div class=&quot;parrow&quot;>↓</div>
+      <div class=&quot;pnode pproj&quot;>入力射影 → 共有潜在特徴 X̃</div>
+      <div class=&quot;splitlabel&quot;>━━ 並列に分岐（同一トークン・同一層）━━</div>
+      <div class=&quot;pbranches&quot;>
+        <div class=&quot;pbranch attn&quot;>
+          <div class=&quot;bh&quot;>⚡ 注意ヘッド</div>
+          <div class=&quot;bm&quot;>高解像度の想起</div>
+          <div class=&quot;pcell&quot;>Y_attn = softmax(QKᵀ)V · X̃</div>
+          <span class=&quot;pmem snap&quot;>スナップショット記憶</span>
+        </div>
+        <div class=&quot;pbranch ssm&quot;>
+          <div class=&quot;bh&quot;>🧠 SSMヘッド</div>
+          <div class=&quot;bm&quot;>効率的な文脈要約</div>
+          <div class=&quot;pcell&quot;>Y_ssm = G ⊙ α(A,B,C,Δ)·X̃</div>
+          <span class=&quot;pmem fade&quot;>フェード記憶</span>
+        </div>
+      </div>
+      <div class=&quot;parrow&quot;>↓ 各出力を正規化 → 学習可能スケール β → 平均 ↓</div>
+      <div class=&quot;fuse&quot;>融合 + 出力射影 W_out</div>
+    </div>
+    <div class=&quot;eq&quot;>
+      <i>Y</i> <span class=&quot;op&quot;>=</span> <i>W</i><sub>out</sub> ( <i>β</i><sub>1</sub> · norm(<i>M</i><sub>attn</sub> <i>X̃</i>) <span class=&quot;op&quot;>+</span> <i>β</i><sub>2</sub> · norm(<i>M</i><sub>ssm</sub> <i>X̃</i>) )
+      <small>β₁,β₂ = チャンネル毎の学習可能スケールベクトル / SSM出力は注意より大きいため正規化が必須 / SSM:注意のパラメータ比 = 5:1</small>
+    </div>
+  </div>
+
+  <div class=&quot;step reveal&quot;>
+    <div class=&quot;sk&quot;>MEMORY — 3種の記憶</div>
+    <h3>1つの層が持つ<span class=&quot;em&quot;>3つの記憶</span></h3>
+    <div class=&quot;triad&quot;>
+      <div class=&quot;mem3 snap&quot;><div class=&quot;mi&quot;>📸</div><h4>スナップショット記憶</h4><p>注意ヘッド由来。高解像度・特定時点の正確な想起。</p></div>
+      <div class=&quot;mem3 fade&quot;><div class=&quot;mi&quot;>🌊</div><h4>フェード記憶</h4><p>SSMヘッド由来。減衰する要約。現在トークン近傍に集中。</p></div>
+      <div class=&quot;mem3 meta&quot;><div class=&quot;mi&quot;>🗂️</div><h4>メタ記憶</h4><p>128個の学習可能メタトークン。圧縮された世界知識・大域アンカー。</p></div>
+    </div>
+    <div class=&quot;blocknote&quot;><b>メタトークン（128個）</b>は入力系列の先頭に付与される学習済み埋め込み。① 無意味なBOSへの<b>強制注意（attention sink）を緩和</b>し注意を情報に再配分、② <b>学習されたattention sink</b>としてエントロピー崩壊を防止、③ ドメイン別に異なるトークンが発火し<b>世界知識を圧縮保持</b>、④ SWA下でも常に窓内にあり大域アンカーになる。推論時は固定なのでKVを事前計算して保存できる。</div>
+  </div>
+
+  <div class=&quot;step reveal&quot;>
+    <div class=&quot;sk&quot;>EFFICIENCY — キャッシュ最適化</div>
+    <h3>3つの<span class=&quot;em&quot;>大域注意層</span>＋層間KV共有</h3>
+    <p>32層のうち<b>大域（全）注意はわずか3層 [0, 15, 31]（先頭・中央・末尾）</b>。残り29層は<b>1024トークンの局所Sliding Window Attention</b>。SSMヘッドが既に大域文脈を運ぶので、ほとんどの層は全注意が要らない。</p>
+    <div class=&quot;laystrip reveal&quot;>
+      <div class=&quot;lt&quot;>32層の注意レイアウト ── 🟡=大域注意(3層) / 🟢=局所SWA window=1024(29層)</div>
+      <div class=&quot;layrow&quot; id=&quot;layrow&quot;></div>
+      <div class=&quot;laylegend&quot;>
+        <span><span class=&quot;sw&quot; style=&quot;background:rgba(252,211,77,.6)&quot;></span>大域注意 [0,15,31]</span>
+        <span><span class=&quot;sw&quot; style=&quot;background:rgba(94,234,212,.4)&quot;></span>局所SWA (window 1024)</span>
+        <span>＋ 隣接2層ペアで<b style=&quot;color:var(--text)&quot;>KVキャッシュ共有</b> ＋ GQA 25q→5kv</span>
+      </div>
+    </div>
+    <div class=&quot;blocknote&quot;>全層をSWAにすると想起が20%以上低下。だが戦略的な3層に大域注意を戻すだけで精度を回復し、<b>2.7×スループット・3.8×キャッシュ削減</b>。隣接層ペアのKV共有は<b>+1.15×スループット・+0.60%精度</b>のタダ飯。学習は1.5Tトークン、系列長2K（最後の100Bで8Kに拡張）。</div>
+  </div>
+</section>
+
+<!-- S5 -->
+<section id=&quot;s5&quot; class=&quot;wrap&quot;>
+  <div class=&quot;shead reveal&quot;><div class=&quot;snum&quot;>05</div><div>
+    <span class=&quot;en&quot;>What to Study Next</span><h2>次に調べるべき技術要素・キーワード</h2>
+    <p>「並列 vs 逐次」のハイブリッド論争、小型/オンデバイスLM、そしてメタトークンやKVキャッシュ圧縮へ。</p>
+  </div></div>
+
+  <div class=&quot;feature reveal&quot;>
+    <div class=&quot;ft&quot;><span class=&quot;star&quot;>★ 重要な対比</span><h3>並列 vs 逐次 ハイブリッド論争</h3><span class=&quot;tag tagg&quot;>Nemotron-H 2504.03624</span></div>
+    <p>興味深いことに、NVIDIA自身の後継 <b>Nemotron-H</b>（8B/47B/56B）は、Hymbaの並列ヘッドではなく<b>逐次型（Mamba-2 + 注意を交互、注意は~8%）</b>に回帰した。大規模では逐次、小型では並列が有利なのか? は重要な問い。</p>
+    <div class=&quot;pts&quot;>
+      <div><b>Hymba（並列）</b>: 同一層で注意とSSMを融合、小型1.5Bで強い</div>
+      <div><b>Nemotron-H（逐次）</b>: Mamba-2を主体に注意を少数散らす、大規模向け</div>
+      <div><b>Jamba/Samba（逐次）</b>: 層を分離。MoE有無・SWA有無で分岐</div>
+      <div>規模・用途による<b>最適な融合方式</b>はまだ未解決</div>
+    </div>
+  </div>
+
+  <div class=&quot;kwgrid reveal&quot;>
+    <div class=&quot;kwcat&quot;><div class=&quot;ch&quot;>🧩 メタトークン / attention sink</div><div class=&quot;csub&quot;>注意の「捨て場」を制御する系譜</div>
+      <div class=&quot;kwitem&quot;><span class=&quot;knm&quot;>StreamingLLM</span><span class=&quot;kds&quot;>attention sink の発見。無限ストリーミング推論<span class=&quot;kid&quot;>Xiao+ 2023</span></span></div>
+      <div class=&quot;kwitem&quot;><span class=&quot;knm&quot;>ViT registers</span><span class=&quot;kds&quot;>学習可能レジスタトークンで spurious attention を吸収<span class=&quot;kid&quot;>Darcet+ 2023</span></span></div>
+      <div class=&quot;kwitem&quot;><span class=&quot;knm&quot;>Prefix-tuning / soft prompt</span><span class=&quot;kds&quot;>学習可能な前置トークンの源流</span></div>
+    </div>
+    <div class=&quot;kwcat&quot;><div class=&quot;ch&quot;>💾 KVキャッシュ圧縮</div><div class=&quot;csub&quot;>Hymbaの効率の核</div>
+      <div class=&quot;kwitem&quot;><span class=&quot;knm&quot;>Cross-layer KV (CLA/YOCO)</span><span class=&quot;kds&quot;>層をまたいでKVを共有</span></div>
+      <div class=&quot;kwitem&quot;><span class=&quot;knm&quot;>GQA / MQA</span><span class=&quot;kds&quot;>ヘッド間KV共有（Hymbaは25q→5kv）</span></div>
+      <div class=&quot;kwitem&quot;><span class=&quot;knm&quot;>SWA + 大域層</span><span class=&quot;kds&quot;>局所窓 + 少数の全注意層の組合せ</span></div>
+      <div class=&quot;kwitem&quot;><span class=&quot;knm&quot;>量子化/退避KV</span><span class=&quot;kds&quot;>キャッシュをさらに圧縮する手法</span></div>
+    </div>
+    <div class=&quot;kwcat&quot;><div class=&quot;ch&quot;>📱 小型・オンデバイスLM</div><div class=&quot;csub&quot;>Hymbaの主戦場</div>
+      <div class=&quot;kwitem&quot;><span class=&quot;knm&quot;>SmolLM2 / Qwen2.5</span><span class=&quot;kds&quot;>sub-2B の強豪。Hymbaの比較対象</span></div>
+      <div class=&quot;kwitem&quot;><span class=&quot;knm&quot;>MobileLLM / Phi</span><span class=&quot;kds&quot;>オンデバイス志向の小型LM</span></div>
+      <div class=&quot;kwitem&quot;><span class=&quot;knm&quot;>RecurrentGemma / Griffin</span><span class=&quot;kds&quot;>線形再帰+局所注意の小型効率モデル</span></div>
+    </div>
+    <div class=&quot;kwcat&quot;><div class=&quot;ch&quot;>🟢 NVIDIA 後継・基盤</div><div class=&quot;csub&quot;>系譜の続き</div>
+      <div class=&quot;kwitem&quot;><span class=&quot;knm&quot;>Hymba-1.5B-Instruct</span><span class=&quot;kds&quot;>SFT+DPO版。関数呼び出し・ロールプレイに強い</span></div>
+      <div class=&quot;kwitem&quot;><span class=&quot;knm&quot;>Nemotron-H</span><span class=&quot;kds&quot;>逐次回帰したMamba-2ハイブリッド大規模族<span class=&quot;kid&quot;>2504.03624</span></span></div>
+      <div class=&quot;kwitem&quot;><span class=&quot;knm&quot;>Mamba-2 / SSD</span><span class=&quot;kds&quot;>状態空間双対性。SSMヘッドの発展<span class=&quot;kid&quot;>2405.21060</span></span></div>
+    </div>
+  </div>
+
+  <div class=&quot;openprob reveal&quot;>
+    <h3>🔬 未解決の問い</h3>
+    <div class=&quot;pp&quot;><div class=&quot;q&quot;>① 並列融合 vs 逐次積層 ── 規模でどちらが勝つ？</div><div class=&quot;a&quot;>Hymbaは小型で並列が勝つと示したが、NVIDIA自身が大規模では逐次(Nemotron-H)を選んだ。スケール則上の境界は未解明。</div></div>
+    <div class=&quot;pp&quot;><div class=&quot;q&quot;>② メタトークンは何を学習しているのか？</div><div class=&quot;a&quot;>ドメイン別発火・attention sink緩和は観測されたが、圧縮された知識の中身と最適個数(128)の根拠は研究途上。</div></div>
+    <div class=&quot;pp&quot;><div class=&quot;q&quot;>③ 大域注意層の最適な数と位置は？</div><div class=&quot;a&quot;>「先頭・中央・末尾の3層」は経験則。層数・配置の理論的最適は未確定。</div></div>
+  </div>
+</section>
+
+<footer>
+  <p>本インフォグラフィックは Hymba 原論文（arXiv:2411.13676）・NVIDIA開発者ブログ・公開config（nvidia/Hymba-1.5B-Base）の調査に基づき作成。数値は原典に準拠。</p>
+  <div class=&quot;refs&quot;>
+    <a href=&quot;https://arxiv.org/abs/2411.13676&quot;>Hymba 2411.13676</a>
+    <a href=&quot;https://huggingface.co/nvidia/Hymba-1.5B-Base&quot;>HF: Hymba-1.5B-Base</a>
+    <a href=&quot;https://arxiv.org/abs/2312.00752&quot;>Mamba 2312.00752</a>
+    <a href=&quot;https://arxiv.org/abs/2504.03624&quot;>Nemotron-H 2504.03624</a>
+  </div>
+  <div class=&quot;crosslink&quot;>
+    <a href=&quot;./Jamba-インフォグラフィック.html&quot;>→ Jamba を見る</a>
+    <a href=&quot;./Samba-インフォグラフィック.html&quot;>→ Samba を見る</a>
+  </div>
+  <p style=&quot;margin-top:14px;color:var(--dim)&quot;>💚 Hybrid-head Architecture for Small LMs — generated for technical understanding</p>
+</footer>
+
+<script>
+  document.body.classList.add('js');
+  // build the 32-layer attention layout strip
+  const glob=[0,15,31];const row=document.getElementById('layrow');
+  for(let i=0;i<32;i++){const c=document.createElement('div');const g=glob.includes(i);c.className='lcell '+(g?'glob':'swa');c.textContent=i;c.title=g?('層'+i+': 大域(全)注意'):('層'+i+': 局所SWA w=1024');row.appendChild(c);}
+  const prog=document.getElementById('progress');
+  const io=new IntersectionObserver((es)=>{es.forEach(e=>{if(e.isIntersecting){e.target.classList.add('in');io.unobserve(e.target);}})},{threshold:.12});
+  document.querySelectorAll('.reveal').forEach(el=>io.observe(el));
+  const secs=[...document.querySelectorAll('section[id]')],links=[...document.querySelectorAll('nav a')];
+  function onScroll(){const st=document.documentElement.scrollTop||document.body.scrollTop;const h=document.documentElement.scrollHeight-document.documentElement.clientHeight;prog.style.width=(st/h*100)+'%';let cur=secs[0]?secs[0].id:'';for(const s of secs){if(s.getBoundingClientRect().top<=120)cur=s.id;}links.forEach(l=>l.classList.toggle('active',l.getAttribute('href')==='#'+cur));}
+  document.addEventListener('scroll',onScroll,{passive:true});onScroll();
+</script>
+</body>
+</html>
+"></iframe>
+  </main>
+
+<script>
+  const tabs = document.querySelectorAll('.tab');
+  const frames = document.querySelectorAll('.frame');
+  tabs.forEach(t => t.addEventListener('click', () => {
+    const target = t.dataset.target;
+    tabs.forEach(x => x.classList.toggle('active', x === t));
+    frames.forEach(f => f.classList.toggle('show', f.id === 'f-' + target));
+  }));
+</script>
+</body>
+</html>
