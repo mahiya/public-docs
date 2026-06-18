@@ -52,6 +52,8 @@
   - [Elastic Search Labs — Vector Database 記事ビューアー（日本語）](htmls/elastic_blogs_vector_search.html ':ignore :target=_blank')
   - [Elastic Cloud Serverless 技術 Deep Dive レポート](htmls/elastic_cloud_serverlss.html ':ignore :target=_blank')
   - [Elastic Cloud vs Azure AI Search / AWS OpenSearch / Google Vertex AI Search — 比較項目定義](htmls/elastic_vs.html ':ignore :target=_blank')
+  - [Elasticsearch 9.3 vs OpenSearch 3.5：ベクトル検索 — ベンチマークレポート](htmls/es-9.3-vs-os-3.5-vector-search.html ':ignore :target=_blank')
+  - [Elasticsearch 9.4 vs Qdrant 1.18：ベクトル検索 — ベンチマークレポート](htmls/es-9.4-vs-qd-1.18-vector-search.html ':ignore :target=_blank')
   - [GPU / AI Accelerator Specs](htmls/gpu_specs.html ':ignore :target=_blank')
   - [Mamba / Jamba / Samba / Hymba — 技術解説インフォグラフィック統合版](htmls/mamba.html ':ignore :target=_blank')
   - [現代のリコメンドシステム全体像 — 多段ファネル構成 技術解説](htmls/recommendation.html ':ignore :target=_blank')
